@@ -254,6 +254,65 @@
     color: rgba(255, 255, 255, 0.95);
 }
 
+.workcell-compact .workcell-sidebar {
+    padding: .3em .25em;
+    border-radius: .9em;
+}
+
+.workcell-compact .workcell-nav-button {
+    border-radius: .75em;
+}
+
+.workcell-compact .workcell-temp-card {
+    min-height: 4.7em;
+}
+
+.workcell-compact .workcell-temp-title {
+    font-size: .88em;
+}
+
+.workcell-compact .workcell-temp-value {
+    font-size: 1.75em;
+}
+
+.workcell-compact .workcell-temp-state {
+    font-size: .95em;
+}
+
+.workcell-compact .workcell-job-filename {
+    font-size: 1.25em;
+}
+
+.workcell-compact .workcell-job-author {
+    font-size: .95em;
+}
+
+.workcell-compact .workcell-action-button {
+    min-height: 3.1em;
+}
+
+.workcell-compact .workcell-action-button label {
+    font-size: 1.15em;
+}
+
+.workcell-compact .workcell-progress-percent,
+.workcell-compact .workcell-progress-time {
+    font-size: 1.55em;
+}
+
+.workcell-compact .workcell-progress-detail {
+    font-size: 1.0em;
+}
+
+.workcell-compact .workcell-thumbnail-button image {
+    margin: .35em;
+}
+
+.workcell-compact .workcell-numpad-container {
+    margin: 1.1em 1.4em;
+    padding: .8em;
+}
+
 button:disabled {
     opacity: .5;
 }

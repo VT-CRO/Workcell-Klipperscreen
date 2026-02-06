@@ -21,6 +21,7 @@ class Panel(ScreenPanel):
         super().__init__(screen, title)
 
         self.content.get_style_context().add_class("workcell-bg")
+        self.compact_mode = not self._screen.vertical_mode and self._screen.width <= 800 and self._screen.height <= 480
 
         styles_dir = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles")
         self.paths = {
@@ -116,12 +117,14 @@ class Panel(ScreenPanel):
         root_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
         self.layout = Gtk.Box(orientation=root_orientation, spacing=0)
         self.layout.get_style_context().add_class("workcell-root")
+        if self.compact_mode:
+            self.layout.get_style_context().add_class("workcell-compact")
         self.content.add(self.layout)
 
         self.sidebar = self.create_sidebar()
         self.layout.pack_start(self.sidebar, False, False, 0)
 
-        self.main_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        self.main_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14 if self.compact_mode else 24)
         self.main_area.get_style_context().add_class("workcell-main-area")
         if self._screen.vertical_mode:
             self.main_area.set_margin_top(14)
@@ -129,14 +132,20 @@ class Panel(ScreenPanel):
             self.main_area.set_margin_end(14)
             self.main_area.set_margin_bottom(14)
         else:
-            self.main_area.set_margin_top(22)
-            self.main_area.set_margin_start(24)
-            self.main_area.set_margin_end(24)
-            self.main_area.set_margin_bottom(20)
+            if self.compact_mode:
+                self.main_area.set_margin_top(8)
+                self.main_area.set_margin_start(10)
+                self.main_area.set_margin_end(10)
+                self.main_area.set_margin_bottom(8)
+            else:
+                self.main_area.set_margin_top(22)
+                self.main_area.set_margin_start(24)
+                self.main_area.set_margin_end(24)
+                self.main_area.set_margin_bottom(20)
         self.layout.pack_start(self.main_area, True, True, 0)
 
         top_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
-        self.top_row = Gtk.Box(orientation=top_orientation, spacing=24)
+        self.top_row = Gtk.Box(orientation=top_orientation, spacing=14 if self.compact_mode else 24)
         self.top_row.get_style_context().add_class("workcell-job-top")
         self.main_area.pack_start(self.top_row, True, True, 0)
 
@@ -145,22 +154,29 @@ class Panel(ScreenPanel):
         self.labels["thumbnail"].set_hexpand(True)
         self.labels["thumbnail"].set_vexpand(True)
         self.labels["thumbnail"].connect("clicked", self.show_fullscreen_thumbnail)
-        self.labels["thumbnail"].add(self._image_from_file(self.paths["preview"], 420, 330))
+        preview_w = 290 if self.compact_mode else 420
+        preview_h = 210 if self.compact_mode else 330
+        self.labels["thumbnail"].add(self._image_from_file(self.paths["preview"], preview_w, preview_h))
         self.top_row.pack_start(self.labels["thumbnail"], True, True, 0)
 
-        status_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        status_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10 if self.compact_mode else 14)
         status_pane.get_style_context().add_class("workcell-status-pane")
         status_pane.set_hexpand(True)
         self.top_row.pack_start(status_pane, True, True, 0)
 
-        header_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        header_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8 if self.compact_mode else 12)
         header_text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         header_text.set_hexpand(True)
         header_text.pack_start(self.labels["file"], False, False, 0)
         header_text.pack_start(self.labels["author"], False, False, 0)
         header_row.pack_start(header_text, True, True, 0)
 
-        brand_size = 64 if not self._screen.vertical_mode else 46
+        if self._screen.vertical_mode:
+            brand_size = 46
+        elif self.compact_mode:
+            brand_size = 42
+        else:
+            brand_size = 64
         brand_icon = self._image_from_file(self.paths["brand"], brand_size, brand_size)
         brand_icon.get_style_context().add_class("workcell-job-brand")
         header_row.pack_end(brand_icon, False, False, 0)
@@ -168,7 +184,7 @@ class Panel(ScreenPanel):
 
         self.buttons = {}
         self.create_buttons()
-        self.buttons["button_box"] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.buttons["button_box"] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8 if self.compact_mode else 12)
         status_pane.pack_start(self.buttons["button_box"], False, False, 0)
 
         progress_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -187,7 +203,7 @@ class Panel(ScreenPanel):
 
         self.labels["darea"] = Gtk.DrawingArea()
         self.labels["darea"].connect("draw", self.on_draw)
-        self.labels["darea"].set_size_request(-1, 10)
+        self.labels["darea"].set_size_request(-1, 8 if self.compact_mode else 10)
         self.labels["darea"].get_style_context().add_class("workcell-progress-bar")
         status_pane.pack_start(self.labels["darea"], False, False, 0)
 
@@ -198,7 +214,7 @@ class Panel(ScreenPanel):
 
         self.temp_row = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL,
-            spacing=24,
+            spacing=12 if self.compact_mode else 24,
         )
         self.temp_row.get_style_context().add_class("workcell-temp-row")
         self.temp_row.set_hexpand(True)
@@ -230,7 +246,7 @@ class Panel(ScreenPanel):
 
     def create_sidebar(self):
         orientation = Gtk.Orientation.HORIZONTAL if self._screen.vertical_mode else Gtk.Orientation.VERTICAL
-        sidebar = Gtk.Box(orientation=orientation, spacing=12)
+        sidebar = Gtk.Box(orientation=orientation, spacing=8 if self.compact_mode else 12)
         sidebar.get_style_context().add_class("workcell-sidebar")
 
         if self._screen.vertical_mode:
@@ -239,18 +255,33 @@ class Panel(ScreenPanel):
             sidebar.set_margin_end(8)
             sidebar.set_margin_bottom(8)
         else:
-            sidebar_width = max(int(self._screen.width * 0.13), 130)
+            sidebar_width = 92 if self.compact_mode else max(int(self._screen.width * 0.13), 130)
             sidebar.set_size_request(sidebar_width, -1)
-            sidebar.set_margin_top(10)
-            sidebar.set_margin_start(10)
-            sidebar.set_margin_end(10)
-            sidebar.set_margin_bottom(10)
+            if self.compact_mode:
+                sidebar.set_margin_top(6)
+                sidebar.set_margin_start(6)
+                sidebar.set_margin_end(6)
+                sidebar.set_margin_bottom(6)
+            else:
+                sidebar.set_margin_top(10)
+                sidebar.set_margin_start(10)
+                sidebar.set_margin_end(10)
+                sidebar.set_margin_bottom(10)
 
-        mark_size = 66 if not self._screen.vertical_mode else 52
+        if self._screen.vertical_mode:
+            mark_size = 52
+        elif self.compact_mode:
+            mark_size = 42
+        else:
+            mark_size = 66
         sidebar.pack_start(self._image_from_file(self.paths["mark"], mark_size, mark_size), False, False, 0)
 
-        button_size = 96 if not self._screen.vertical_mode else 76
-        icon_size = 46 if not self._screen.vertical_mode else 36
+        if self._screen.vertical_mode:
+            button_size, icon_size = 76, 36
+        elif self.compact_mode:
+            button_size, icon_size = 64, 30
+        else:
+            button_size, icon_size = 96, 46
         sidebar.pack_start(self._nav_button(self.paths["home"], button_size, icon_size, self.go_home), False, False, 0)
         sidebar.pack_start(
             self._nav_button(self.paths["settings"], button_size, icon_size, self.go_settings), False, False, 0
@@ -292,13 +323,20 @@ class Panel(ScreenPanel):
         card = Gtk.EventBox()
         card.get_style_context().add_class("workcell-temp-card")
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
-        row.set_margin_top(14)
-        row.set_margin_bottom(14)
-        row.set_margin_start(18)
-        row.set_margin_end(18)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10 if self.compact_mode else 16)
+        if self.compact_mode:
+            row.set_margin_top(8)
+            row.set_margin_bottom(8)
+            row.set_margin_start(12)
+            row.set_margin_end(12)
+        else:
+            row.set_margin_top(14)
+            row.set_margin_bottom(14)
+            row.set_margin_start(18)
+            row.set_margin_end(18)
 
-        icon = self._image_from_file(icon_path, 42, 42)
+        icon_size = 32 if self.compact_mode else 42
+        icon = self._image_from_file(icon_path, icon_size, icon_size)
         icon_class = "workcell-temp-icon-nozzle" if key == "nozzle" else "workcell-temp-icon-bed"
         icon.get_style_context().add_class(icon_class)
         row.pack_start(icon, False, False, 0)
@@ -549,14 +587,21 @@ class Panel(ScreenPanel):
         if danger:
             button.get_style_context().add_class("workcell-action-danger")
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
-        row.set_margin_top(10)
-        row.set_margin_bottom(10)
-        row.set_margin_start(16)
-        row.set_margin_end(16)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10 if self.compact_mode else 16)
+        if self.compact_mode:
+            row.set_margin_top(7)
+            row.set_margin_bottom(7)
+            row.set_margin_start(10)
+            row.set_margin_end(10)
+        else:
+            row.set_margin_top(10)
+            row.set_margin_bottom(10)
+            row.set_margin_start(16)
+            row.set_margin_end(16)
 
         if icon_name:
-            icon_size = int(self.bts * self._gtk.img_scale * 1.1)
+            scale = 0.85 if self.compact_mode else 1.1
+            icon_size = int(self.bts * self._gtk.img_scale * scale)
             row.pack_start(self._gtk.Image(icon_name, icon_size, icon_size), False, False, 0)
 
         label = Gtk.Label(label=label_text)
@@ -952,17 +997,18 @@ class Panel(ScreenPanel):
         self.content.show_all()
 
     def show_file_thumbnail(self):
-        if self._screen.vertical_mode:
-            max_width = self._screen.width
-            max_height = self._screen.height
-        else:
-            max_width = self._screen.width
-            max_height = self._gtk.content_height * .46
-        width = max(self.labels['thumbnail'].get_allocated_width(), max_width)
-        height = max(self.labels['thumbnail'].get_allocated_height(), max_height)
+        width = self.labels['thumbnail'].get_allocated_width()
+        height = self.labels['thumbnail'].get_allocated_height()
         if width <= 1 or height <= 1:
-            width = max_width
-            height = max_height
+            if self._screen.vertical_mode:
+                width = int(self._screen.width * 0.9)
+                height = int(self._screen.height * 0.42)
+            elif self.compact_mode:
+                width = int(self._screen.width * 0.42)
+                height = int(self._screen.height * 0.44)
+            else:
+                width = int(self._screen.width * 0.48)
+                height = int(self._screen.height * 0.5)
         pixbuf = self.get_file_image(self.filename, width, height)
         if pixbuf is None:
             logging.debug("no pixbuf")

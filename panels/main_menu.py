@@ -15,6 +15,7 @@ class Panel(MenuPanel):
     def __init__(self, screen, title, items=None):
         super().__init__(screen, title, items)
         self.content.get_style_context().add_class("workcell-bg")
+        self.compact_mode = not self._screen.vertical_mode and self._screen.width <= 800 and self._screen.height <= 480
 
         styles_dir = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles")
         self.paths = {
@@ -38,12 +39,14 @@ class Panel(MenuPanel):
         root_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
         self.root = Gtk.Box(orientation=root_orientation, spacing=0)
         self.root.get_style_context().add_class("workcell-root")
+        if self.compact_mode:
+            self.root.get_style_context().add_class("workcell-compact")
         self.overlay.add(self.root)
 
         self.sidebar = self.create_sidebar()
         self.root.pack_start(self.sidebar, False, False, 0)
 
-        self.main_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        self.main_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14 if self.compact_mode else 24)
         self.main_area.get_style_context().add_class("workcell-main-area")
         if self._screen.vertical_mode:
             self.main_area.set_margin_top(16)
@@ -51,10 +54,16 @@ class Panel(MenuPanel):
             self.main_area.set_margin_end(16)
             self.main_area.set_margin_bottom(16)
         else:
-            self.main_area.set_margin_top(24)
-            self.main_area.set_margin_start(30)
-            self.main_area.set_margin_end(30)
-            self.main_area.set_margin_bottom(24)
+            if self.compact_mode:
+                self.main_area.set_margin_top(8)
+                self.main_area.set_margin_start(10)
+                self.main_area.set_margin_end(10)
+                self.main_area.set_margin_bottom(8)
+            else:
+                self.main_area.set_margin_top(24)
+                self.main_area.set_margin_start(30)
+                self.main_area.set_margin_end(30)
+                self.main_area.set_margin_bottom(24)
         self.root.pack_start(self.main_area, True, True, 0)
 
         hero_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -62,16 +71,19 @@ class Panel(MenuPanel):
         hero_box.set_valign(Gtk.Align.CENTER)
         hero_box.set_hexpand(True)
         hero_box.set_vexpand(True)
-        hero_size = min(int(self._screen.width * 0.52), 760) if not self._screen.vertical_mode else min(
-            int(self._screen.width * 0.62), 420
-        )
+        if self._screen.vertical_mode:
+            hero_size = min(int(self._screen.width * 0.62), 420)
+        elif self.compact_mode:
+            hero_size = min(int(self._screen.height * 0.52), 250)
+        else:
+            hero_size = min(int(self._screen.width * 0.52), 760)
         hero_image = self._image_from_file(self.paths["brand"], hero_size, hero_size)
         hero_image.get_style_context().add_class("workcell-hero-logo")
         hero_box.pack_start(hero_image, False, False, 0)
         self.main_area.pack_start(hero_box, True, True, 0)
 
         temp_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
-        self.temp_row = Gtk.Box(orientation=temp_orientation, spacing=24)
+        self.temp_row = Gtk.Box(orientation=temp_orientation, spacing=12 if self.compact_mode else 24)
         self.temp_row.get_style_context().add_class("workcell-temp-row")
         self.temp_row.set_hexpand(True)
 
@@ -116,7 +128,7 @@ class Panel(MenuPanel):
 
     def create_sidebar(self):
         orientation = Gtk.Orientation.HORIZONTAL if self._screen.vertical_mode else Gtk.Orientation.VERTICAL
-        sidebar = Gtk.Box(orientation=orientation, spacing=12)
+        sidebar = Gtk.Box(orientation=orientation, spacing=8 if self.compact_mode else 12)
         sidebar.get_style_context().add_class("workcell-sidebar")
 
         if self._screen.vertical_mode:
@@ -125,14 +137,25 @@ class Panel(MenuPanel):
             sidebar.set_margin_end(10)
             sidebar.set_margin_bottom(10)
         else:
-            sidebar_width = max(int(self._screen.width * 0.13), 130)
+            sidebar_width = 92 if self.compact_mode else max(int(self._screen.width * 0.13), 130)
             sidebar.set_size_request(sidebar_width, -1)
-            sidebar.set_margin_top(12)
-            sidebar.set_margin_start(10)
-            sidebar.set_margin_end(10)
-            sidebar.set_margin_bottom(12)
+            if self.compact_mode:
+                sidebar.set_margin_top(6)
+                sidebar.set_margin_start(6)
+                sidebar.set_margin_end(6)
+                sidebar.set_margin_bottom(6)
+            else:
+                sidebar.set_margin_top(12)
+                sidebar.set_margin_start(10)
+                sidebar.set_margin_end(10)
+                sidebar.set_margin_bottom(12)
 
-        mark_size = 66 if not self._screen.vertical_mode else 52
+        if self._screen.vertical_mode:
+            mark_size = 52
+        elif self.compact_mode:
+            mark_size = 42
+        else:
+            mark_size = 66
         mark = self._image_from_file(self.paths["mark"], mark_size, mark_size)
         mark.get_style_context().add_class("workcell-sidebar-mark")
         sidebar.pack_start(mark, False, False, 0)
@@ -144,8 +167,12 @@ class Panel(MenuPanel):
             (self.paths["spool"], self.go_spool),
         ]
 
-        button_size = 96 if not self._screen.vertical_mode else 76
-        icon_size = 46 if not self._screen.vertical_mode else 36
+        if self._screen.vertical_mode:
+            button_size, icon_size = 76, 36
+        elif self.compact_mode:
+            button_size, icon_size = 64, 30
+        else:
+            button_size, icon_size = 96, 46
         for icon, callback in button_specs:
             button = Gtk.Button()
             button.get_style_context().add_class("workcell-nav-button")
@@ -163,13 +190,20 @@ class Panel(MenuPanel):
         button.set_hexpand(True)
         button.connect("clicked", self.show_numpad, key)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
-        row.set_margin_top(14)
-        row.set_margin_bottom(14)
-        row.set_margin_start(18)
-        row.set_margin_end(18)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10 if self.compact_mode else 16)
+        if self.compact_mode:
+            row.set_margin_top(8)
+            row.set_margin_bottom(8)
+            row.set_margin_start(12)
+            row.set_margin_end(12)
+        else:
+            row.set_margin_top(14)
+            row.set_margin_bottom(14)
+            row.set_margin_start(18)
+            row.set_margin_end(18)
 
-        icon = self._image_from_file(icon_path, 42, 42)
+        icon_size = 32 if self.compact_mode else 42
+        icon = self._image_from_file(icon_path, icon_size, icon_size)
         icon.get_style_context().add_class(icon_style)
         row.pack_start(icon, False, False, 0)
 
