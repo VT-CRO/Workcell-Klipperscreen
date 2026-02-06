@@ -98,8 +98,10 @@ class Panel(MenuPanel):
         self.numpad_placeholder.set_valign(Gtk.Align.FILL)
         self.numpad_placeholder.set_hexpand(True)
         self.numpad_placeholder.set_vexpand(True)
+        self.numpad_placeholder.set_no_show_all(True)
         self.numpad_placeholder.hide()
         self.overlay.add_overlay(self.numpad_placeholder)
+        self.overlay.set_overlay_pass_through(self.numpad_placeholder, True)
 
         self.update_temperatures()
         GLib.timeout_add_seconds(1, self.update_temperatures)
@@ -254,6 +256,8 @@ class Panel(MenuPanel):
         self.labels["vbox"].pack_start(self.labels["label"], False, False, 0)
         self.labels["vbox"].pack_start(self.labels["keypad"], True, True, 0)
         self.numpad_placeholder.pack_start(self.labels["vbox"], True, True, 0)
+        self.numpad_placeholder.set_no_show_all(False)
+        self.overlay.set_overlay_pass_through(self.numpad_placeholder, False)
         self.numpad_placeholder.show_all()
         self.numpad_visible = True
 
@@ -261,6 +265,8 @@ class Panel(MenuPanel):
         for child in self.numpad_placeholder.get_children():
             self.numpad_placeholder.remove(child)
         self.numpad_placeholder.hide()
+        self.numpad_placeholder.set_no_show_all(True)
+        self.overlay.set_overlay_pass_through(self.numpad_placeholder, True)
         self.numpad_visible = False
 
     def change_target_temp(self, temp):
