@@ -243,10 +243,11 @@ class Panel(ScreenPanel):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
             temp = self._printer.get_stat(device, "temperature")
+            target = self._printer.get_stat(device, "target") or 0
             if temp is not None:
-                lbl.set_label(f"{temp:.0f}°")
+                lbl.set_label(f"{temp:.0f}°/{target:.0f}°")
             else:
-                lbl.set_label("--°")
+                lbl.set_label("--°/--°")
         return True
 
     def change_distance(self, widget, distance):
