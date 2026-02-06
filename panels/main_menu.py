@@ -1,274 +1,295 @@
 import logging
+import os
+import pathlib
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
-from gi.repository import Gdk, GdkPixbuf, Gio, Gtk, Pango
-from ks_includes.KlippyGcodes import KlippyGcodes
-from panels.menu import Panel as MenuPanel
-from ks_includes.widgets.heatergraph import HeaterGraph
+from gi.repository import GdkPixbuf, GLib, Gtk
+
 from ks_includes.widgets.keypad import Keypad
-from ks_includes.KlippyGtk import find_widget
-import os
-import pathlib
+from panels.menu import Panel as MenuPanel
 
 
 class Panel(MenuPanel):
     def __init__(self, screen, title, items=None):
         super().__init__(screen, title, items)
-        self.content.get_style_context().add_class("customBG")
-        iconPath = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles", "crologo.svg")
-        settingsPath = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles", "gear.svg")
-        movePath = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles", "move.svg")
-        printPath = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles", "print.svg")
-        self.devices = {}
-        self.graph_update = None
+        self.content.get_style_context().add_class("workcell-bg")
+
+        styles_dir = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles")
+        self.paths = {
+            "brand": os.path.join(styles_dir, "crologo.svg"),
+            "mark": os.path.join(styles_dir, "workcell-mark.svg"),
+            "home": os.path.join(styles_dir, "home.svg"),
+            "settings": os.path.join(styles_dir, "sliders.svg"),
+            "files": os.path.join(styles_dir, "menu-bars.svg"),
+            "spool": os.path.join(styles_dir, "spool.svg"),
+            "temp_nozzle": os.path.join(styles_dir, "thermometer-nozzle.svg"),
+            "temp_bed": os.path.join(styles_dir, "thermometer-bed.svg"),
+        }
+
         self.active_heater = None
-        self.h = self.f = 0
-        self.temp_buttons = {}  # To store temp buttons for updating
-        
+        self.numpad_visible = False
+        self.temp_cards = {}
+
         self.overlay = Gtk.Overlay()
         self.content.add(self.overlay)
-        
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.main_box.set_margin_top(30)
-        self.overlay.add(self.main_box)
 
-        # Header with logo and title
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(iconPath, -1, -1)
-        image = Gtk.Image.new_from_pixbuf(pixbuf)
-        hbox.pack_start(image, False, False, 0)
+        root_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
+        self.root = Gtk.Box(orientation=root_orientation, spacing=0)
+        self.root.get_style_context().add_class("workcell-root")
+        self.overlay.add(self.root)
 
-        titleLabel = Gtk.Label()
-        titleLabel.set_markup("<b>VT CRO Queue</b>")
-        titleLabel.set_name("large_text")
-        titleLabel.set_justify(Gtk.Justification.CENTER)
-        titleLabel.set_margin_top(20)
-        titleLabel.set_margin_bottom(20)
-        hbox.pack_start(titleLabel, False, False, 0)
+        self.sidebar = self.create_sidebar()
+        self.root.pack_start(self.sidebar, False, False, 0)
 
-        hbox.set_hexpand(False)
-        hbox.set_vexpand(False)
-        hbox.set_halign(Gtk.Align.CENTER)
-        hbox.set_valign(Gtk.Align.START)
-        self.main_box.add(hbox)
+        self.main_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        self.main_area.get_style_context().add_class("workcell-main-area")
+        if self._screen.vertical_mode:
+            self.main_area.set_margin_top(16)
+            self.main_area.set_margin_start(16)
+            self.main_area.set_margin_end(16)
+            self.main_area.set_margin_bottom(16)
+        else:
+            self.main_area.set_margin_top(24)
+            self.main_area.set_margin_start(30)
+            self.main_area.set_margin_end(30)
+            self.main_area.set_margin_bottom(24)
+        self.root.pack_start(self.main_area, True, True, 0)
 
-        # Buttons section
-        buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
-        buttons.set_margin_top(20)
-        buttons.set_margin_bottom(20)
-        buttons.set_margin_start(20)
-        buttons.set_margin_end(20)
+        hero_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        hero_box.set_halign(Gtk.Align.CENTER)
+        hero_box.set_valign(Gtk.Align.CENTER)
+        hero_box.set_hexpand(True)
+        hero_box.set_vexpand(True)
+        hero_size = min(int(self._screen.width * 0.52), 760) if not self._screen.vertical_mode else min(
+            int(self._screen.width * 0.62), 420
+        )
+        hero_image = self._image_from_file(self.paths["brand"], hero_size, hero_size)
+        hero_image.get_style_context().add_class("workcell-hero-logo")
+        hero_box.pack_start(hero_image, False, False, 0)
+        self.main_area.pack_start(hero_box, True, True, 0)
 
-        button1 = self.create_rounded_button(movePath, "Move", self.button1_clicked)
-        button2 = self.create_rounded_button(settingsPath, "Settings", self.button2_clicked)
-        button3 = self.create_rounded_button(printPath, "Andrew Da Best", self.button3_clicked)
+        temp_orientation = Gtk.Orientation.VERTICAL if self._screen.vertical_mode else Gtk.Orientation.HORIZONTAL
+        self.temp_row = Gtk.Box(orientation=temp_orientation, spacing=24)
+        self.temp_row.get_style_context().add_class("workcell-temp-row")
+        self.temp_row.set_hexpand(True)
 
-        buttons.pack_start(button1, True, True, 0)
-        buttons.pack_start(button2, True, True, 0)
-        buttons.pack_start(button3, True, True, 0)
+        nozzle_device = self._printer.get_stat("toolhead", "extruder") or "extruder"
+        self._build_temp_card(
+            key="nozzle",
+            label=_("Nozzle"),
+            device=nozzle_device,
+            icon_path=self.paths["temp_nozzle"],
+            icon_style="workcell-temp-icon-nozzle",
+        )
+        self._build_temp_card(
+            key="bed",
+            label=_("Bed"),
+            device="heater_bed",
+            icon_path=self.paths["temp_bed"],
+            icon_style="workcell-temp-icon-bed",
+        )
+        self.main_area.pack_end(self.temp_row, False, False, 0)
 
-        self.main_box.add(buttons)
+        self.numpad_placeholder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.numpad_placeholder.get_style_context().add_class("workcell-numpad-overlay")
+        self.numpad_placeholder.set_halign(Gtk.Align.FILL)
+        self.numpad_placeholder.set_valign(Gtk.Align.FILL)
+        self.numpad_placeholder.set_hexpand(True)
+        self.numpad_placeholder.set_vexpand(True)
+        self.numpad_placeholder.hide()
+        self.overlay.add_overlay(self.numpad_placeholder)
 
-        # Temperature section with buttons
-        self.temp_grid = Gtk.Grid()
-        self.temp_grid.set_column_spacing(20)
-        self.temp_grid.set_row_spacing(10)
-        self.temp_grid.set_margin_top(20)
-        self.temp_grid.set_margin_bottom(20)
-        self.temp_grid.set_margin_start(20)
-        self.temp_grid.set_margin_end(20)
-        self.add_temperature_rows()
-        self.main_box.add(self.temp_grid)
-        
-        self.numpad_placeholder = Gtk.Box()
-        self.overlay.add_overlay(self.numpad_placeholder)  # Add the numpad placeholder to the overlay
-        self.numpad_placeholder.set_halign(Gtk.Align.CENTER)
-        self.numpad_placeholder.set_valign(Gtk.Align.CENTER)  # Center the numpa
+        self.update_temperatures()
         GLib.timeout_add_seconds(1, self.update_temperatures)
 
-    def create_rounded_button(self, icon_path, label_text, callback):
+    def _image_from_file(self, path, width, height):
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(path, width, height)
+            return Gtk.Image.new_from_pixbuf(pixbuf)
+        except Exception as err:
+            logging.debug(f"Unable to load image {path}: {err}")
+            return Gtk.Image()
+
+    def create_sidebar(self):
+        orientation = Gtk.Orientation.HORIZONTAL if self._screen.vertical_mode else Gtk.Orientation.VERTICAL
+        sidebar = Gtk.Box(orientation=orientation, spacing=12)
+        sidebar.get_style_context().add_class("workcell-sidebar")
+
+        if self._screen.vertical_mode:
+            sidebar.set_margin_top(10)
+            sidebar.set_margin_start(10)
+            sidebar.set_margin_end(10)
+            sidebar.set_margin_bottom(10)
+        else:
+            sidebar_width = max(int(self._screen.width * 0.13), 130)
+            sidebar.set_size_request(sidebar_width, -1)
+            sidebar.set_margin_top(12)
+            sidebar.set_margin_start(10)
+            sidebar.set_margin_end(10)
+            sidebar.set_margin_bottom(12)
+
+        mark_size = 66 if not self._screen.vertical_mode else 52
+        mark = self._image_from_file(self.paths["mark"], mark_size, mark_size)
+        mark.get_style_context().add_class("workcell-sidebar-mark")
+        sidebar.pack_start(mark, False, False, 0)
+
+        button_specs = [
+            (self.paths["home"], self.go_home),
+            (self.paths["settings"], self.go_settings),
+            (self.paths["files"], self.go_files),
+            (self.paths["spool"], self.go_spool),
+        ]
+
+        button_size = 96 if not self._screen.vertical_mode else 76
+        icon_size = 46 if not self._screen.vertical_mode else 36
+        for icon, callback in button_specs:
+            button = Gtk.Button()
+            button.get_style_context().add_class("workcell-nav-button")
+            button.set_relief(Gtk.ReliefStyle.NONE)
+            button.set_size_request(button_size, button_size)
+            button.add(self._image_from_file(icon, icon_size, icon_size))
+            button.connect("clicked", callback)
+            sidebar.pack_start(button, False, False, 0)
+
+        return sidebar
+
+    def _build_temp_card(self, key, label, device, icon_path, icon_style):
         button = Gtk.Button()
-        button.get_style_context().add_class("rounded-button")
-        if label_text == "Print":
-            button.get_style_context().add_class("rounded-button")
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        button.get_style_context().add_class("workcell-temp-card")
+        button.set_hexpand(True)
+        button.connect("clicked", self.show_numpad, key)
 
-        if icon_path:
-            image = Gtk.Image.new_from_file(icon_path)
-            image.set_valign(Gtk.Align.CENTER)
-            vbox.pack_start(image, True, True, 0)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        row.set_margin_top(14)
+        row.set_margin_bottom(14)
+        row.set_margin_start(18)
+        row.set_margin_end(18)
 
-        label = Gtk.Label(label=label_text)
-        label.set_valign(Gtk.Align.CENTER)
-        label.set_halign(Gtk.Align.CENTER)
-        vbox.pack_start(label, False, False, 0)
+        icon = self._image_from_file(icon_path, 42, 42)
+        icon.get_style_context().add_class(icon_style)
+        row.pack_start(icon, False, False, 0)
 
-        vbox.set_valign(Gtk.Align.CENTER)
-        button.add(vbox)
-        button.connect("clicked", callback)
-        return button
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        text_box.set_hexpand(True)
 
-    def add_temperature_rows(self):
-    # Create a horizontal box for the temperature rows
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
-        hbox.set_halign(Gtk.Align.CENTER)  # Horizontally center the temperature rows
-        hbox.set_valign(Gtk.Align.END)  # Push the box into the empty space
-        hbox.set_margin_top(10)  # Optional: Adjust spacing from the buttons above
+        title_label = Gtk.Label(label=label, xalign=0)
+        title_label.get_style_context().add_class("workcell-temp-title")
 
-        # Add the Extruder Temp row
-        extruder_box = self.create_temp_box("Extruder", "extruder")
-        hbox.pack_start(extruder_box, False, False, 0)
+        value_label = Gtk.Label(label="--°", xalign=0)
+        value_label.get_style_context().add_class("workcell-temp-value")
 
-        # Add the Bed Temp row
-        bed_box = self.create_temp_box("Bed", "heater_bed")
-        hbox.pack_start(bed_box, False, False, 0)
+        text_box.pack_start(title_label, False, False, 0)
+        text_box.pack_start(value_label, False, False, 0)
 
-        # Add the horizontal box to the content
-        self.main_box.add(hbox)
+        state_label = Gtk.Label(label=_("Idle"), xalign=1)
+        state_label.set_halign(Gtk.Align.END)
+        state_label.get_style_context().add_class("workcell-temp-state")
 
+        row.pack_start(text_box, True, True, 0)
+        row.pack_end(state_label, False, False, 0)
 
-    def create_temp_box(self, label_text, device):
-        # Create a horizontal box for a single temperature row
-        temp_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        button.add(row)
+        self.temp_row.pack_start(button, True, True, 0)
 
-        # Add the label
-        label = Gtk.Label(label=label_text)
-        label.set_halign(Gtk.Align.START)
-        label.set_name("temperature_text")
-        temp_box.pack_start(label, False, False, 0)
-
-        # Add the button
-        button = Gtk.Button(label="-- / --")
-        button.get_style_context().add_class("temperature-button")
-        button.set_halign(Gtk.Align.END)
-        button.connect("clicked", self.show_numpad, device)
-        temp_box.pack_start(button, False, False, 0)
-
-        # Store the button for updates
-        self.temp_buttons[device] = button
-
-        return temp_box
+        self.temp_cards[key] = {
+            "device": device,
+            "value": value_label,
+            "state": state_label,
+        }
 
     def update_temperatures(self):
-        for device, button in self.temp_buttons.items():
+        current_extruder = self._printer.get_stat("toolhead", "extruder")
+        if current_extruder and "nozzle" in self.temp_cards:
+            self.temp_cards["nozzle"]["device"] = current_extruder
+
+        for card in self.temp_cards.values():
+            device = card["device"]
             current_temp = self._printer.get_stat(device, "temperature")
             target_temp = self._printer.get_stat(device, "target")
 
-            current_temp = f"{current_temp:.1f}" if current_temp is not None else "--"
-            target_temp = f"{target_temp:.1f}" if target_temp is not None else "--"
+            value = f"{current_temp:.0f}°" if current_temp is not None else "--°"
+            state = _("Printing") if target_temp and target_temp > 0 else _("Idle")
 
-            button.set_label(f"{current_temp} / {target_temp}")
+            card["value"].set_label(value)
+            card["state"].set_label(state)
         return True
 
-    def show_numpad(self, button, device):
-        logging.info("Showing numpad")
-        self.active_heater = device
-        
-        
+    def show_numpad(self, button, card_key):
+        if card_key not in self.temp_cards:
+            return
+
+        self.active_heater = self.temp_cards[card_key]["device"]
+        if not self.active_heater:
+            return
 
         if "keypad" not in self.labels:
-            # Create the Keypad if it doesn't already exist
             self.labels["keypad"] = Keypad(self._screen, self.change_target_temp, self.pid_calibrate, self.hide_numpad)
-            self.labels["label"] = Gtk.Label(label=f"Set {device} temperature")
-            self.labels["vbox"] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            self.labels["label"] = Gtk.Label(xalign=0)
+            self.labels["label"].get_style_context().add_class("workcell-numpad-title")
+            self.labels["vbox"] = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+            self.labels["vbox"].get_style_context().add_class("workcell-numpad-container")
 
-        # Configure the Keypad for the selected device
-        can_pid = self._printer.state not in ("printing", "paused") \
-            and self._screen.printer.config[self.active_heater]['control'] == 'pid'
+        can_pid = False
+        if self._printer.state not in ("printing", "paused"):
+            try:
+                can_pid = self._screen.printer.config[self.active_heater]["control"] == "pid"
+            except Exception:
+                can_pid = False
         self.labels["keypad"].show_pid(can_pid)
         self.labels["keypad"].clear()
 
-        # Remove the Keypad from its current parent if necessary
+        heater_name = self.active_heater.replace("_", " ")
+        self.labels["label"].set_label(_("Set {heater} temperature").format(heater=heater_name))
+
+        for child in self.numpad_placeholder.get_children():
+            self.numpad_placeholder.remove(child)
+
         if self.labels["keypad"].get_parent() is not None:
             self.labels["keypad"].get_parent().remove(self.labels["keypad"])
+        if self.labels["label"].get_parent() is not None:
             self.labels["label"].get_parent().remove(self.labels["label"])
-            
-        self.numpad_placeholder.get_style_context().add_class("numpad-placeholder")
-        self.labels["keypad"].get_style_context().add_class("keypad")
 
-        self.numpad_placeholder.override_background_color(
-            Gtk.StateFlags.NORMAL, Gdk.RGBA(0, 0, 0, 1.0)  # Solid black background
-        )
-
-        # Add the Keypad to the overlay placeholder
-        self.labels["vbox"].add(self.labels["label"])
-        self.labels["vbox"].add(self.labels["keypad"])
-        self.numpad_placeholder.add(self.labels["vbox"])
-        #self.numpad_placeholder.add(label)
-        #self.numpad_placeholder.add(self.labels["keypad"])
-
-        # Ensure the placeholder and keypad are fully visible and interactive
-        self.numpad_placeholder.set_sensitive(True)
-        self.numpad_placeholder.set_opacity(1.0)  # Ensure the placeholder is fully opaque
-        self.numpad_placeholder.set_hexpand(True)
-        self.numpad_placeholder.set_vexpand(True)
-        self.numpad_placeholder.set_halign(Gtk.Align.FILL)
-        self.numpad_placeholder.set_valign(Gtk.Align.FILL)
+        self.labels["vbox"].pack_start(self.labels["label"], False, False, 0)
+        self.labels["vbox"].pack_start(self.labels["keypad"], True, True, 0)
+        self.numpad_placeholder.pack_start(self.labels["vbox"], True, True, 0)
         self.numpad_placeholder.show_all()
-
-        # Redraw the overlay
-        self.overlay.queue_draw()
-
         self.numpad_visible = True
-        logging.info("Numpad displayed successfully")
 
-
-    
     def hide_numpad(self, widget=None):
-        if "keypad" in self.labels and self.labels["keypad"].get_parent():
-            self.numpad_placeholder.remove(self.labels["keypad"])
-            self.numpad_placeholder.remove(self.labels["label"])
-            self.numpad_placeholder.remove(self.labels["vbox"])
-
-        # Fully hide the numpad_placeholder to prevent event blocking
-        self.numpad_placeholder.set_sensitive(False)
+        for child in self.numpad_placeholder.get_children():
+            self.numpad_placeholder.remove(child)
         self.numpad_placeholder.hide()
-        # Re-enable all UI elements
-        for child in self.main_box.get_children():
-            child.set_sensitive(True)
-
-        # Reset focus to the main box
-        self.main_box.grab_focus()
-
-        # Refresh the overlay
-        self.overlay.queue_draw()
         self.numpad_visible = False
 
-    def on_numpad_button_clicked(self, button, entry):
-        entry.set_text(entry.get_text() + button.get_label())
-
-    def set_temperature(self, button, entry, device, dialog):
-        try:
-            target_temp = float(entry.get_text())
-            print(f"Setting {device} temperature to {target_temp}°C")
-            dialog.destroy()
-        except ValueError:
-            print("Invalid temperature entered")
-    
     def change_target_temp(self, temp):
+        if not self.active_heater:
+            return
+
         name = self.active_heater.split()[1] if len(self.active_heater.split()) > 1 else self.active_heater
         temp = self.verify_max_temp(temp)
         if temp is False:
             return
 
-        if self.active_heater.startswith('extruder'):
+        if self.active_heater.startswith("extruder"):
             self._screen._ws.klippy.set_tool_temp(self._printer.get_tool_number(self.active_heater), temp)
         elif self.active_heater == "heater_bed":
             self._screen._ws.klippy.set_bed_temp(temp)
-        elif self.active_heater.startswith('heater_generic '):
+        elif self.active_heater.startswith("heater_generic "):
             self._screen._ws.klippy.set_heater_temp(name, temp)
-        elif self.active_heater.startswith('temperature_fan '):
+        elif self.active_heater.startswith("temperature_fan "):
             self._screen._ws.klippy.set_temp_fan_temp(name, temp)
         else:
             logging.info(f"Unknown heater: {self.active_heater}")
             self._screen.show_popup_message(_("Unknown Heater") + " " + self.active_heater)
         self._printer.set_stat(name, {"target": temp})
-    
+
     def pid_calibrate(self, temp):
-        heater = self.active_heater.split(' ', maxsplit=1)[-1]
+        if not self.active_heater:
+            return
+
+        heater = self.active_heater.split(" ", maxsplit=1)[-1]
         if self.verify_max_temp(temp):
             script = {"script": f"PID_CALIBRATE HEATER={heater} TARGET={temp}"}
             self._screen._confirm_send_action(
@@ -278,26 +299,42 @@ class Panel(MenuPanel):
                 + "\n\n"
                 + _("It may take more than 5 minutes depending on the heater power."),
                 "printer.gcode.script",
-                script
+                script,
             )
-    
+
     def verify_max_temp(self, temp):
         temp = int(temp)
-        max_temp = int(float(self._printer.get_config_section(self.active_heater)['max_temp']))
+        try:
+            max_temp = int(float(self._printer.get_config_section(self.active_heater)["max_temp"]))
+        except Exception:
+            return max(temp, 0)
         logging.debug(f"{temp}/{max_temp}")
         if temp > max_temp:
-            self._screen.show_popup_message(_("Can't set above the maximum:") + f' {max_temp}')
+            self._screen.show_popup_message(_("Can't set above the maximum:") + f" {max_temp}")
             return False
         return max(temp, 0)
 
-    def button1_clicked(self, button):
-        self._screen.show_panel("move")
+    def go_home(self, button):
+        self._screen._menu_go_back(home=True)
 
-    def button2_clicked(self, button):
+    def go_settings(self, button):
         self._screen.show_panel("settings")
 
-    def button3_clicked(self, button):
-        #self._screen._ws.klippy.gcode_script("K_ROS MESSAGE=GCODE,Start")
+    def go_files(self, button):
         self._screen.show_panel("print_screen")
-        #self.back()
-        #print("Going back")
+
+    def go_spool(self, button):
+        try:
+            self._screen.show_panel("spoolman")
+        except Exception as err:
+            logging.debug(f"Unable to open spoolman panel: {err}")
+            self._screen.show_popup_message(_("Spool panel is not available"))
+
+    def back(self):
+        if self.numpad_visible:
+            self.hide_numpad()
+            return True
+        return super().back()
+
+    def activate(self):
+        self.update_temperatures()

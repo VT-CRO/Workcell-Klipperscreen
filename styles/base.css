@@ -97,6 +97,163 @@
     color: inherit;  /* Inherit the color from the parent button */
 }
 
+.workcell-bg {
+    background-image: linear-gradient(160deg, #1b1f24 0%, #14181d 55%, #101317 100%);
+    background-color: #14181d;
+}
+
+.workcell-root {
+    background-color: transparent;
+}
+
+.workcell-main-area {
+    background-color: transparent;
+}
+
+.workcell-sidebar {
+    background-color: rgba(48, 53, 60, 0.92);
+    border-radius: 1.4em;
+    padding: .6em .45em;
+}
+
+.workcell-nav-button {
+    background-color: #0e1217;
+    border-radius: 1.1em;
+    margin: .1em 0;
+}
+
+.workcell-nav-button:hover {
+    background-color: #1a222d;
+}
+
+.workcell-nav-button:hover * {
+    color: #ffffff;
+}
+
+.workcell-temp-row {
+    margin-top: .4em;
+}
+
+.workcell-temp-card {
+    background-color: rgba(53, 58, 64, 0.96);
+    border-radius: 1.15em;
+    min-height: 6.1em;
+}
+
+.workcell-temp-card:hover {
+    background-color: rgba(62, 68, 75, 0.98);
+}
+
+.workcell-temp-title {
+    font-family: "Montserrat";
+    font-size: 1.05em;
+    font-weight: 500;
+}
+
+.workcell-temp-value {
+    font-family: "Montserrat";
+    font-size: 2.35em;
+    font-weight: 600;
+}
+
+.workcell-temp-state {
+    font-family: "Montserrat";
+    font-size: 1.2em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.workcell-numpad-overlay {
+    background-color: rgba(0, 0, 0, 0.88);
+}
+
+.workcell-numpad-container {
+    margin: 2.5em 4em;
+    padding: 1.1em;
+    border-radius: 1em;
+    background-color: #11161b;
+}
+
+.workcell-numpad-title {
+    font-family: "Montserrat";
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.workcell-job-top {
+    margin-bottom: .4em;
+}
+
+.workcell-thumbnail-button,
+.workcell-thumbnail-button:hover,
+.workcell-thumbnail-button:active,
+.workcell-thumbnail-button:focus {
+    background-color: rgba(22, 25, 30, 0.92);
+    border-radius: 1.15em;
+}
+
+.workcell-thumbnail-button image {
+    margin: .8em;
+}
+
+.workcell-status-pane {
+    background-color: transparent;
+}
+
+.workcell-job-filename {
+    font-family: "Montserrat";
+    font-size: 1.65em;
+    font-weight: 500;
+}
+
+.workcell-job-author {
+    font-family: "Montserrat";
+    font-size: 1.2em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.workcell-action-button {
+    background-color: #1a212c;
+    border-radius: .9em;
+    min-height: 4.1em;
+}
+
+.workcell-action-button:hover {
+    background-color: #212a37;
+}
+
+.workcell-action-button label {
+    font-family: "Montserrat";
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.workcell-action-danger {
+    background-color: #1b212a;
+}
+
+.workcell-action-danger:hover {
+    background-color: #222a35;
+}
+
+.workcell-progress-percent {
+    font-family: "Montserrat";
+    font-size: 2.1em;
+    font-weight: 600;
+}
+
+.workcell-progress-time {
+    font-family: "Montserrat";
+    font-size: 2.1em;
+    font-weight: 500;
+}
+
+.workcell-progress-detail {
+    font-family: "Montserrat";
+    font-size: 1.35em;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
 button:disabled {
     opacity: .5;
 }
