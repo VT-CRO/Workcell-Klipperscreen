@@ -55,6 +55,11 @@ class Panel(ScreenPanel):
 
         # Action buttons bar
         self.labels["menu"] = self._gtk.Button("settings", _("Menu"), "color4")
+        menu_css = Gtk.CssProvider()
+        menu_css.load_from_data(b"button { border-bottom-color: #2cdb1a; }")
+        self.labels["menu"].get_style_context().add_provider(
+            menu_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+        )
         self.labels["menu"].connect("clicked", self._screen._go_to_submenu, "")
         self.labels["restart"] = self._gtk.Button(
             "refresh", _("Klipper Restart"), "color1"
