@@ -21,7 +21,6 @@ class Panel(ScreenPanel):
         self.settings = {}
         self.labels = {}
         self.temp_labels = {}
-        self.pending_targets = {}
 
         # Main vertical layout
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -195,7 +194,7 @@ class Panel(ScreenPanel):
         name_lbl.set_halign(Gtk.Align.START)
         info.add(name_lbl)
 
-        temp_lbl = Gtk.Label(label="--°/--°")
+        temp_lbl = Gtk.Label(label="--°")
         temp_lbl.get_style_context().add_class("temp-value")
         temp_lbl.set_halign(Gtk.Align.START)
         info.add(temp_lbl)
@@ -228,25 +227,12 @@ class Panel(ScreenPanel):
 
     def _adjust_temp(self, widget, device, increment):
         """Adjust temperature by increment."""
-        current_target = self.pending_targets.get(device) if device in self.pending_targets else (self._printer.get_stat(device, "target") or 0)
+        current_target = self._printer.get_stat(device, "target") or 0
         new_target = max(0, current_target + increment)
 
         # Enforce max temp
         max_temp = int(float(self._printer.get_config_section(device).get('max_temp', 300)))
-        min_temp = int(float(self._printer.get_config_section(device).get('min_temp', 0)))
-        min_active = max(min_temp, 10)
         new_target = min(new_target, max_temp)
-
-        if 0 < new_target < min_active:
-            # Below Klipper's minimum — show in display but don't send
-            self.pending_targets[device] = new_target
-            temp = self._printer.get_stat(device, "temperature")
-            temp_str = f"{temp:.0f}°" if temp is not None else "--°"
-            self.temp_labels[device].set_label(f"{temp_str}/{new_target:.0f}°")
-            return
-
-        # Clear pending and send
-        self.pending_targets.pop(device, None)
 
         if device == "extruder":
             self._screen._ws.klippy.set_tool_temp(self._printer.get_tool_number(device), new_target)
@@ -257,13 +243,10 @@ class Panel(ScreenPanel):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
             temp = self._printer.get_stat(device, "temperature")
-            temp_str = f"{temp:.0f}°" if temp is not None else "--°"
-            if device in self.pending_targets:
-                target_str = f"{self.pending_targets[device]:.0f}°"
+            if temp is not None:
+                lbl.set_label(f"{temp:.0f}°")
             else:
-                target = self._printer.get_stat(device, "target")
-                target_str = f"{target:.0f}°" if target is not None else "--°"
-            lbl.set_label(f"{temp_str}/{target_str}")
+                lbl.set_label("--°")
         return True
 
     def change_distance(self, widget, distance):
@@ -324,10 +307,4 @@ class Panel(ScreenPanel):
             if device in data:
                 temp = self._printer.get_stat(device, "temperature")
                 if temp is not None:
-                    temp_str = f"{temp:.0f}°"
-                    if device in self.pending_targets:
-                        target_str = f"{self.pending_targets[device]:.0f}°"
-                    else:
-                        target = self._printer.get_stat(device, "target")
-                        target_str = f"{target:.0f}°" if target is not None else "--°"
-                    lbl.set_label(f"{temp_str}/{target_str}")
+                    lbl.set_label(f"{temp:.0f}°")
