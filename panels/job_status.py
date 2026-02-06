@@ -28,9 +28,13 @@ class Panel(ScreenPanel):
             "brand": os.path.join(styles_dir, "crologo.svg"),
             "mark": os.path.join(styles_dir, "workcell-mark.svg"),
             "home": os.path.join(styles_dir, "home.svg"),
+            "home_active": os.path.join(styles_dir, "home-dark.svg"),
             "settings": os.path.join(styles_dir, "sliders.svg"),
+            "settings_active": os.path.join(styles_dir, "sliders-dark.svg"),
             "files": os.path.join(styles_dir, "menu-bars.svg"),
-            "spool": os.path.join(styles_dir, "spool.svg"),
+            "files_active": os.path.join(styles_dir, "menu-bars-dark.svg"),
+            "spool": os.path.join(styles_dir, "spool-nav.svg"),
+            "spool_active": os.path.join(styles_dir, "spool-nav-dark.svg"),
             "temp_nozzle": os.path.join(styles_dir, "thermometer-nozzle.svg"),
             "temp_bed": os.path.join(styles_dir, "thermometer-bed.svg"),
             "preview": os.path.join(styles_dir, "cube-placeholder.svg"),
@@ -282,18 +286,29 @@ class Panel(ScreenPanel):
             button_size, icon_size = 64, 30
         else:
             button_size, icon_size = 96, 46
-        sidebar.pack_start(self._nav_button(self.paths["home"], button_size, icon_size, self.go_home), False, False, 0)
+        sidebar.pack_start(
+            self._nav_button(self.paths["home_active"], button_size, icon_size, self.go_home, is_active=True),
+            False,
+            False,
+            0,
+        )
         sidebar.pack_start(
             self._nav_button(self.paths["settings"], button_size, icon_size, self.go_settings), False, False, 0
         )
-        sidebar.pack_start(self._nav_button(self.paths["files"], button_size, icon_size, self.go_files), False, False, 0)
-        sidebar.pack_start(self._nav_button(self.paths["spool"], button_size, icon_size, self.go_spool), False, False, 0)
+        sidebar.pack_start(
+            self._nav_button(self.paths["files"], button_size, icon_size, self.go_files), False, False, 0
+        )
+        sidebar.pack_start(
+            self._nav_button(self.paths["spool"], button_size, icon_size, self.go_spool), False, False, 0
+        )
 
         return sidebar
 
-    def _nav_button(self, icon_path, button_size, icon_size, callback):
+    def _nav_button(self, icon_path, button_size, icon_size, callback, is_active=False):
         button = Gtk.Button()
         button.get_style_context().add_class("workcell-nav-button")
+        if is_active:
+            button.get_style_context().add_class("workcell-nav-button-active")
         button.set_relief(Gtk.ReliefStyle.NONE)
         button.set_size_request(button_size, button_size)
         button.add(self._image_from_file(icon_path, icon_size, icon_size))
@@ -311,13 +326,13 @@ class Panel(ScreenPanel):
         self._screen._menu_go_back(home=True)
 
     def go_settings(self, button):
-        self._safe_show_panel("settings")
+        self._safe_show_panel("move")
 
     def go_files(self, button):
         self._safe_show_panel("print_screen")
 
     def go_spool(self, button):
-        self._safe_show_panel("spoolman")
+        self._safe_show_panel("filament")
 
     def _build_temperature_card(self, key, label, device, icon_path):
         card = Gtk.EventBox()

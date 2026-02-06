@@ -98,8 +98,8 @@
 }
 
 .workcell-bg {
-    background-image: linear-gradient(160deg, #1b1f24 0%, #14181d 55%, #101317 100%);
-    background-color: #14181d;
+    background-image: linear-gradient(155deg, #20252c 0%, #171c22 52%, #10151a 100%);
+    background-color: #171c22;
 }
 
 .workcell-root {
@@ -111,23 +111,34 @@
 }
 
 .workcell-sidebar {
-    background-color: rgba(48, 53, 60, 0.92);
+    background-color: rgba(49, 54, 62, 0.98);
     border-radius: 1.4em;
     padding: .6em .45em;
 }
 
 .workcell-nav-button {
-    background-color: #0e1217;
+    background-color: #0f141a;
     border-radius: 1.1em;
     margin: .1em 0;
 }
 
 .workcell-nav-button:hover {
-    background-color: #1a222d;
+    background-color: #0f141a;
 }
 
 .workcell-nav-button:hover * {
     color: #ffffff;
+}
+
+.workcell-nav-button-active,
+.workcell-nav-button-active:hover,
+.workcell-nav-button-active:focus,
+.workcell-nav-button-active:active {
+    background-color: #f7f8fa;
+}
+
+.workcell-nav-button-active label {
+    color: #050709;
 }
 
 .workcell-temp-row {
@@ -141,7 +152,7 @@
 }
 
 .workcell-temp-card:hover {
-    background-color: rgba(62, 68, 75, 0.98);
+    background-color: rgba(53, 58, 64, 0.96);
 }
 
 .workcell-temp-title {
@@ -218,7 +229,7 @@
 }
 
 .workcell-action-button:hover {
-    background-color: #212a37;
+    background-color: #1a212c;
 }
 
 .workcell-action-button label {
@@ -232,7 +243,128 @@
 }
 
 .workcell-action-danger:hover {
-    background-color: #222a35;
+    background-color: #1b212a;
+}
+
+.workcell-distance-row {
+    margin-bottom: .1em;
+}
+
+.workcell-distance-button {
+    background-color: #0f141a;
+    border-radius: .95em;
+    min-height: 3.45em;
+    min-width: 8.6em;
+    margin: 0;
+}
+
+.workcell-distance-button label {
+    font-family: "Montserrat";
+    font-size: 1.9em;
+    font-weight: 500;
+}
+
+.workcell-distance-button-active {
+    background-color: #f7f8fa;
+}
+
+.workcell-distance-button-active label {
+    color: #090b0f;
+}
+
+.workcell-axis-label {
+    font-family: "Montserrat";
+    font-size: 1.95em;
+    font-weight: 500;
+    color: #f6f7f8;
+}
+
+.workcell-jog-button {
+    background-color: #30353c;
+    border-radius: .78em;
+    min-width: 7.2em;
+    min-height: 4.8em;
+    margin: 0;
+}
+
+.workcell-jog-button label {
+    font-family: "Montserrat";
+    font-size: 2.05em;
+    font-weight: 600;
+}
+
+.workcell-jog-home {
+    background-color: #2a3038;
+}
+
+.workcell-jog-button:hover,
+.workcell-jog-home:hover {
+    background-color: #30353c;
+}
+
+.workcell-temp-adjust-card {
+    background-color: rgba(53, 58, 64, 0.98);
+    border-radius: 1.05em;
+    padding: .42em .5em;
+}
+
+.workcell-square-button {
+    background-color: #0f141a;
+    border-radius: .6em;
+    min-width: 2.8em;
+    min-height: 2.8em;
+    margin: 0;
+}
+
+.workcell-square-button label {
+    font-family: "Montserrat";
+    font-size: 1.9em;
+    font-weight: 500;
+}
+
+.workcell-queue-button {
+    background-color: rgba(53, 58, 64, 0.98);
+    border-radius: .9em;
+    min-width: 470px;
+    min-height: 80px;
+    margin: 0;
+}
+
+.workcell-queue-button label {
+    font-family: "Montserrat";
+    font-size: 2.05em;
+    font-weight: 500;
+}
+
+.workcell-queue-button:hover {
+    background-color: rgba(53, 58, 64, 0.98);
+}
+
+.workcell-filament-button {
+    background-color: rgba(53, 58, 64, 0.98);
+    border-radius: .95em;
+    min-height: 7.8em;
+    margin: 0;
+}
+
+.workcell-filament-button:hover {
+    background-color: rgba(53, 58, 64, 0.98);
+}
+
+.workcell-filament-button-active {
+    background-color: rgba(74, 81, 91, 0.98);
+}
+
+.workcell-filament-button label {
+    font-family: "Montserrat";
+    font-size: 2.0em;
+    font-weight: 500;
+}
+
+.workcell-filament-label {
+    font-family: "Montserrat";
+    font-size: 2.0em;
+    font-weight: 500;
 }
 
 .workcell-progress-percent {
@@ -260,6 +392,10 @@
 }
 
 .workcell-compact .workcell-nav-button {
+    border-radius: .75em;
+}
+
+.workcell-compact .workcell-nav-button-active {
     border-radius: .75em;
 }
 
@@ -311,6 +447,63 @@
 .workcell-compact .workcell-numpad-container {
     margin: 1.1em 1.4em;
     padding: .8em;
+}
+
+.workcell-compact .workcell-distance-button {
+    min-height: 2.95em;
+    min-width: 5.35em;
+    border-radius: .72em;
+}
+
+.workcell-compact .workcell-distance-button label {
+    font-size: 1.45em;
+}
+
+.workcell-compact .workcell-axis-label {
+    font-size: 1.55em;
+}
+
+.workcell-compact .workcell-jog-button {
+    min-width: 4.55em;
+    min-height: 3.05em;
+    border-radius: .65em;
+}
+
+.workcell-compact .workcell-jog-button label {
+    font-size: 1.45em;
+}
+
+.workcell-compact .workcell-temp-adjust-card {
+    border-radius: .84em;
+    padding: .25em .3em;
+}
+
+.workcell-compact .workcell-square-button {
+    min-width: 2.05em;
+    min-height: 2.05em;
+    border-radius: .45em;
+}
+
+.workcell-compact .workcell-square-button label {
+    font-size: 1.4em;
+}
+
+.workcell-compact .workcell-queue-button {
+    min-width: 420px;
+    min-height: 72px;
+}
+
+.workcell-compact .workcell-queue-button label {
+    font-size: 1.8em;
+}
+
+.workcell-compact .workcell-filament-button {
+    min-height: 6.2em;
+    border-radius: .78em;
+}
+
+.workcell-compact .workcell-filament-label {
+    font-size: 1.7em;
 }
 
 button:disabled {

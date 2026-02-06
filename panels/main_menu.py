@@ -22,9 +22,13 @@ class Panel(MenuPanel):
             "brand": os.path.join(styles_dir, "crologo.svg"),
             "mark": os.path.join(styles_dir, "workcell-mark.svg"),
             "home": os.path.join(styles_dir, "home.svg"),
+            "home_active": os.path.join(styles_dir, "home-dark.svg"),
             "settings": os.path.join(styles_dir, "sliders.svg"),
+            "settings_active": os.path.join(styles_dir, "sliders-dark.svg"),
             "files": os.path.join(styles_dir, "menu-bars.svg"),
-            "spool": os.path.join(styles_dir, "spool.svg"),
+            "files_active": os.path.join(styles_dir, "menu-bars-dark.svg"),
+            "spool": os.path.join(styles_dir, "spool-nav.svg"),
+            "spool_active": os.path.join(styles_dir, "spool-nav-dark.svg"),
             "temp_nozzle": os.path.join(styles_dir, "thermometer-nozzle.svg"),
             "temp_bed": os.path.join(styles_dir, "thermometer-bed.svg"),
         }
@@ -32,6 +36,8 @@ class Panel(MenuPanel):
         self.active_heater = None
         self.numpad_visible = False
         self.temp_cards = {}
+        self.enable_temp_adjust = False
+        self.last_print_state = self._printer.get_stat("print_stats", "state")
 
         self.overlay = Gtk.Overlay()
         self.content.add(self.overlay)
@@ -161,10 +167,10 @@ class Panel(MenuPanel):
         sidebar.pack_start(mark, False, False, 0)
 
         button_specs = [
-            (self.paths["home"], self.go_home),
-            (self.paths["settings"], self.go_settings),
-            (self.paths["files"], self.go_files),
-            (self.paths["spool"], self.go_spool),
+            (self.paths["home"], self.paths["home_active"], self.go_home, True),
+            (self.paths["settings"], self.paths["settings_active"], self.go_settings, False),
+            (self.paths["files"], self.paths["files_active"], self.go_files, False),
+            (self.paths["spool"], self.paths["spool_active"], self.go_spool, False),
         ]
 
         if self._screen.vertical_mode:
@@ -173,22 +179,26 @@ class Panel(MenuPanel):
             button_size, icon_size = 64, 30
         else:
             button_size, icon_size = 96, 46
-        for icon, callback in button_specs:
+        for icon, active_icon, callback, is_active in button_specs:
             button = Gtk.Button()
             button.get_style_context().add_class("workcell-nav-button")
+            if is_active:
+                button.get_style_context().add_class("workcell-nav-button-active")
             button.set_relief(Gtk.ReliefStyle.NONE)
             button.set_size_request(button_size, button_size)
-            button.add(self._image_from_file(icon, icon_size, icon_size))
+            button_icon = active_icon if is_active else icon
+            button.add(self._image_from_file(button_icon, icon_size, icon_size))
             button.connect("clicked", callback)
             sidebar.pack_start(button, False, False, 0)
 
         return sidebar
 
     def _build_temp_card(self, key, label, device, icon_path, icon_style):
-        button = Gtk.Button()
-        button.get_style_context().add_class("workcell-temp-card")
-        button.set_hexpand(True)
-        button.connect("clicked", self.show_numpad, key)
+        card = Gtk.Button() if self.enable_temp_adjust else Gtk.EventBox()
+        card.get_style_context().add_class("workcell-temp-card")
+        card.set_hexpand(True)
+        if self.enable_temp_adjust:
+            card.connect("clicked", self.show_numpad, key)
 
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10 if self.compact_mode else 16)
         if self.compact_mode:
@@ -226,8 +236,8 @@ class Panel(MenuPanel):
         row.pack_start(text_box, True, True, 0)
         row.pack_end(state_label, False, False, 0)
 
-        button.add(row)
-        self.temp_row.pack_start(button, True, True, 0)
+        card.add(row)
+        self.temp_row.pack_start(card, True, True, 0)
 
         self.temp_cards[key] = {
             "device": device,
@@ -358,17 +368,38 @@ class Panel(MenuPanel):
         self._screen._menu_go_back(home=True)
 
     def go_settings(self, button):
-        self._screen.show_panel("settings")
+        self._safe_show_panel("move")
 
     def go_files(self, button):
-        self._screen.show_panel("print_screen")
+        self._safe_show_panel("print_screen")
 
     def go_spool(self, button):
         try:
-            self._screen.show_panel("spoolman")
+            self._screen.show_panel("filament")
         except Exception as err:
-            logging.debug(f"Unable to open spoolman panel: {err}")
-            self._screen.show_popup_message(_("Spool panel is not available"))
+            logging.debug(f"Unable to open filament panel: {err}")
+            self._screen.show_popup_message(_("Filament panel is not available"))
+
+    def _safe_show_panel(self, panel_name):
+        try:
+            self._screen.show_panel(panel_name)
+        except Exception as err:
+            logging.debug(f"Unable to open panel '{panel_name}': {err}")
+            self._screen.show_popup_message(_("Panel is not available"))
+
+    def process_update(self, action, data):
+        if action != "notify_status_update":
+            return
+
+        print_state = self._printer.get_stat("print_stats", "state")
+        if (
+            print_state in {"printing", "paused"}
+            and print_state != self.last_print_state
+            and self._screen._cur_panels
+            and self._screen._cur_panels[-1] == "main_menu"
+        ):
+            self._safe_show_panel("job_status")
+        self.last_print_state = print_state
 
     def back(self):
         if self.numpad_visible:
