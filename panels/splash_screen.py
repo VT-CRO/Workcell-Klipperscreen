@@ -54,30 +54,46 @@ class Panel(ScreenPanel):
         main_box.pack_start(center_box, True, True, 0)
 
         # Action buttons bar
+        self.action_css = Gtk.CssProvider()
+        self.action_css.load_from_data(b"button { border-bottom-color: #2cdb1a; }")
+
         self.labels["menu"] = self._gtk.Button("settings", _("Menu"), "color4")
-        menu_css = Gtk.CssProvider()
-        menu_css.load_from_data(b"button { border-bottom-color: #2cdb1a; }")
         self.labels["menu"].get_style_context().add_provider(
-            menu_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
         )
         self.labels["menu"].connect("clicked", self._screen._go_to_submenu, "")
         self.labels["restart"] = self._gtk.Button(
             "refresh", _("Klipper Restart"), "color1"
         )
+        self.labels["restart"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+        )
         self.labels["restart"].connect("clicked", self.restart_klipper)
         self.labels["firmware_restart"] = self._gtk.Button(
             "refresh", _("Firmware Restart"), "color2"
+        )
+        self.labels["firmware_restart"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
         )
         self.labels["firmware_restart"].connect("clicked", self.firmware_restart)
         self.labels["restart_system"] = self._gtk.Button(
             "refresh", _("System Restart"), "color1"
         )
+        self.labels["restart_system"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+        )
         self.labels["restart_system"].connect("clicked", self.reboot_poweroff, "reboot")
         self.labels["shutdown"] = self._gtk.Button(
             "shutdown", _("System Shutdown"), "color2"
         )
+        self.labels["shutdown"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+        )
         self.labels["shutdown"].connect("clicked", self.reboot_poweroff, "shutdown")
         self.labels["retry"] = self._gtk.Button("load", _("Retry"), "color3")
+        self.labels["retry"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+        )
         self.labels["retry"].connect("clicked", self.retry)
 
         self.labels["actions"] = Gtk.Box(hexpand=True, vexpand=False, homogeneous=True)
@@ -122,6 +138,9 @@ class Panel(ScreenPanel):
     def add_power_button(self, powerdevs):
         self.labels["power"] = self._gtk.Button(
             "shutdown", _("Power On Printer"), "color3"
+        )
+        self.labels["power"].get_style_context().add_provider(
+            self.action_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
         )
         self.labels["power"].connect(
             "clicked", self._screen.power_devices, powerdevs, True
