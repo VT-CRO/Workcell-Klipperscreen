@@ -171,7 +171,7 @@ class Panel(ScreenPanel):
         # Minus button
         minus_btn = Gtk.Button(label="-")
         minus_btn.get_style_context().add_class("temp-adjust-btn")
-        minus_btn.set_size_request(64, 72)
+        minus_btn.set_size_request(48, 52)
         minus_btn.connect("clicked", self._adjust_temp, device, -self.temp_increment)
         group.pack_start(minus_btn, False, False, 0)
 
@@ -202,9 +202,8 @@ class Panel(ScreenPanel):
         name_lbl.set_halign(Gtk.Align.START)
         text_box.pack_start(name_lbl, False, False, 0)
 
-        temp_lbl = Gtk.Label()
-        temp_lbl.set_markup("<span size='xx-large' weight='bold'>--°</span>")
-        temp_lbl.get_style_context().add_class("temp-value-large")
+        temp_lbl = Gtk.Label(label="--°")
+        temp_lbl.get_style_context().add_class("temp-value")
         temp_lbl.set_halign(Gtk.Align.START)
         text_box.pack_start(temp_lbl, False, False, 0)
 
@@ -214,7 +213,7 @@ class Panel(ScreenPanel):
         # Plus button
         plus_btn = Gtk.Button(label="+")
         plus_btn.get_style_context().add_class("temp-adjust-btn")
-        plus_btn.set_size_request(64, 72)
+        plus_btn.set_size_request(48, 52)
         plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
         group.pack_start(plus_btn, False, False, 0)
 
@@ -241,8 +240,10 @@ class Panel(ScreenPanel):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
             temp = self._printer.get_stat(device, "temperature")
-            temp_str = f"{temp:.0f}" if temp is not None else "--"
-            lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp_str}°</span>")
+            if temp is not None:
+                lbl.set_label(f"{temp:.0f}°")
+            else:
+                lbl.set_label("--°")
         return True
 
     def change_distance(self, widget, distance):
@@ -303,4 +304,4 @@ class Panel(ScreenPanel):
             if device in data:
                 temp = self._printer.get_stat(device, "temperature")
                 if temp is not None:
-                    lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp:.0f}°</span>")
+                    lbl.set_label(f"{temp:.0f}°")

@@ -76,7 +76,9 @@
     padding: 0;
 }
 
-.temp-control-group .temp-value-large {
+.temp-control-group .temp-value {
+    font-size: 1.6em;
+    font-weight: normal;
     color: white;
     margin-top: 0;
     padding: 0;
@@ -173,11 +175,11 @@
 /* --- Temperature +/- Controls --- */
 .temp-adjust-btn {
     background-color: #1A1D25;
-    border-radius: 12px;
-    min-width: 56px;
-    min-height: 56px;
+    border-radius: 10px;
+    min-width: 40px;
+    min-height: 40px;
     margin: 2px;
-    padding: 4px;
+    padding: 2px;
     border: 0;
 }
 
