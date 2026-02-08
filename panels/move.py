@@ -171,7 +171,7 @@ class Panel(ScreenPanel):
         # Minus button
         minus_btn = Gtk.Button(label="-")
         minus_btn.get_style_context().add_class("temp-adjust-btn")
-        minus_btn.set_size_request(48, 52)
+        minus_btn.set_size_request(48, 48)
         minus_btn.connect("clicked", self._adjust_temp, device, -self.temp_increment)
         group.pack_start(minus_btn, False, False, 0)
 
@@ -213,7 +213,7 @@ class Panel(ScreenPanel):
         # Plus button
         plus_btn = Gtk.Button(label="+")
         plus_btn.get_style_context().add_class("temp-adjust-btn")
-        plus_btn.set_size_request(48, 52)
+        plus_btn.set_size_request(48, 48)
         plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
         group.pack_start(plus_btn, False, False, 0)
 
@@ -239,9 +239,9 @@ class Panel(ScreenPanel):
     def _update_temps(self):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
-            temp = self._printer.get_stat(device, "temperature")
-            if temp is not None:
-                lbl.set_label(f"{temp:.0f}°")
+            target = self._printer.get_stat(device, "target")
+            if target is not None:
+                lbl.set_label(f"{target:.0f}°")
             else:
                 lbl.set_label("--°")
         return True
@@ -302,6 +302,6 @@ class Panel(ScreenPanel):
         # Update temperatures from live data
         for device, lbl in self.temp_labels.items():
             if device in data:
-                temp = self._printer.get_stat(device, "temperature")
-                if temp is not None:
-                    lbl.set_label(f"{temp:.0f}°")
+                target = self._printer.get_stat(device, "target")
+                if target is not None:
+                    lbl.set_label(f"{target:.0f}°")
