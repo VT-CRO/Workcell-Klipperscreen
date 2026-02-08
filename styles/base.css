@@ -60,7 +60,29 @@
     border: 0;
 }
 
-/* --- Temperature Cards --- */
+/* --- Temperature Control Groups (move panel) --- */
+.temp-control-group {
+    background-color: #3A3D45;
+    border-radius: 16px;
+    padding: 6px;
+    margin: 0 8px;
+    min-height: 72px;
+}
+
+.temp-control-group .temp-label {
+    font-size: 0.75em;
+    color: #CCCCCC;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.temp-control-group .temp-value-large {
+    color: white;
+    margin-top: 0;
+    padding: 0;
+}
+
+/* --- Temperature Cards (legacy) --- */
 .temp-card {
     background-color: #3A3D45;
     border-radius: 12px;
@@ -150,10 +172,10 @@
 
 /* --- Temperature +/- Controls --- */
 .temp-adjust-btn {
-    background-color: #3A3D45;
-    border-radius: 8px;
-    min-width: 44px;
-    min-height: 44px;
+    background-color: #1A1D25;
+    border-radius: 12px;
+    min-width: 56px;
+    min-height: 56px;
     margin: 2px;
     padding: 4px;
     border: 0;
@@ -161,12 +183,12 @@
 
 .temp-adjust-btn label {
     color: white;
-    font-size: 1.4em;
+    font-size: 1.6em;
     font-weight: bold;
 }
 
 .temp-adjust-btn:active {
-    background-color: #555860;
+    background-color: #333640;
 }
 
 /* --- Control / Action Buttons (Pause, Cancel, Queue) --- */

@@ -1,9 +1,11 @@
 import logging
+import os
+import pathlib
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GdkPixbuf
 from ks_includes.KlippyGcodes import KlippyGcodes
 from ks_includes.screen_panel import ScreenPanel
 
@@ -129,11 +131,11 @@ class Panel(ScreenPanel):
         temp_bar.set_margin_top(4)
 
         # Nozzle temp control
-        nozzle_ctrl = self._create_temp_control("Nozzle", "extruder", 0.2, 0.6, 1.0)
+        nozzle_ctrl = self._create_temp_control("Nozzle", "extruder", "thermometer-nozzle")
         temp_bar.pack_start(nozzle_ctrl, False, False, 0)
 
         # Bed temp control
-        bed_ctrl = self._create_temp_control("Bed", "heater_bed", 1.0, 0.5, 0.2)
+        bed_ctrl = self._create_temp_control("Bed", "heater_bed", "thermometer-bed")
         temp_bar.pack_start(bed_ctrl, False, False, 0)
 
         main_box.pack_end(temp_bar, False, False, 0)
@@ -160,70 +162,66 @@ class Panel(ScreenPanel):
         btn.connect("clicked", self.move, axis, direction)
         return btn
 
-    def _create_temp_control(self, label_text, device, r, g, b):
-        """Create a temperature control with +/- buttons."""
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+    def _create_temp_control(self, label_text, device, icon_name):
+        """Create a temperature control with +/- buttons matching the new design."""
+        # Outer group container (rounded gray card)
+        group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        group.get_style_context().add_class("temp-control-group")
 
         # Minus button
         minus_btn = Gtk.Button(label="-")
         minus_btn.get_style_context().add_class("temp-adjust-btn")
-        minus_btn.set_size_request(44, 48)
+        minus_btn.set_size_request(64, 72)
         minus_btn.connect("clicked", self._adjust_temp, device, -self.temp_increment)
-        box.pack_start(minus_btn, False, False, 0)
+        group.pack_start(minus_btn, False, False, 0)
 
-        # Temperature card
-        card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        card.get_style_context().add_class("temp-card")
-        card.set_size_request(180, 52)
+        # Middle section: thermometer icon + label/temp
+        middle = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        middle.set_valign(Gtk.Align.CENTER)
+        middle.set_halign(Gtk.Align.CENTER)
+        middle.set_hexpand(True)
+        middle.set_margin_start(4)
+        middle.set_margin_end(4)
 
-        # Indicator
-        indicator = Gtk.DrawingArea()
-        indicator.set_size_request(6, 28)
-        indicator.connect("draw", self._draw_indicator, r, g, b)
-        ind_box = Gtk.Box()
-        ind_box.set_valign(Gtk.Align.CENTER)
-        ind_box.set_margin_start(6)
-        ind_box.add(indicator)
-        card.pack_start(ind_box, False, False, 0)
+        # Thermometer icon
+        svg_path = os.path.join(
+            pathlib.Path(__file__).parent.resolve().parent,
+            "styles", f"{icon_name}.svg"
+        )
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(svg_path, 20, 48)
+        icon_img = Gtk.Image.new_from_pixbuf(pixbuf)
+        icon_img.set_valign(Gtk.Align.CENTER)
+        middle.pack_start(icon_img, False, False, 0)
 
-        # Label and temp
-        info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        info.set_valign(Gtk.Align.CENTER)
+        # Text: label above, large temp below
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        text_box.set_valign(Gtk.Align.CENTER)
+
         name_lbl = Gtk.Label(label=label_text)
         name_lbl.get_style_context().add_class("temp-label")
         name_lbl.set_halign(Gtk.Align.START)
-        info.add(name_lbl)
+        text_box.pack_start(name_lbl, False, False, 0)
 
-        temp_lbl = Gtk.Label(label="--°/--°")
-        temp_lbl.get_style_context().add_class("temp-value")
+        temp_lbl = Gtk.Label()
+        temp_lbl.set_markup("<span size='xx-large' weight='bold'>--°</span>")
+        temp_lbl.get_style_context().add_class("temp-value-large")
         temp_lbl.set_halign(Gtk.Align.START)
-        info.add(temp_lbl)
+        text_box.pack_start(temp_lbl, False, False, 0)
 
-        card.pack_start(info, True, True, 0)
-        box.pack_start(card, False, False, 0)
+        middle.pack_start(text_box, False, False, 0)
+        group.pack_start(middle, True, True, 0)
 
         # Plus button
         plus_btn = Gtk.Button(label="+")
         plus_btn.get_style_context().add_class("temp-adjust-btn")
-        plus_btn.set_size_request(44, 48)
+        plus_btn.set_size_request(64, 72)
         plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
-        box.pack_start(plus_btn, False, False, 0)
+        group.pack_start(plus_btn, False, False, 0)
 
         # Store temp label for updates
         self.temp_labels[device] = temp_lbl
 
-        return box
-
-    def _draw_indicator(self, widget, ctx, r, g, b):
-        width = widget.get_allocated_width()
-        height = widget.get_allocated_height()
-        radius = width / 2
-        ctx.set_source_rgb(r, g, b)
-        ctx.arc(width / 2, radius, radius, 3.14159, 0)
-        ctx.arc(width / 2, height - radius, radius, 0, 3.14159)
-        ctx.close_path()
-        ctx.fill()
-        return True
+        return group
 
     def _adjust_temp(self, widget, device, increment):
         """Adjust temperature by increment."""
@@ -243,10 +241,8 @@ class Panel(ScreenPanel):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
             temp = self._printer.get_stat(device, "temperature")
-            target = self._printer.get_stat(device, "target")
-            temp_str = f"{temp:.0f}°" if temp is not None else "--°"
-            target_str = f"{target:.0f}°" if target is not None else "--°"
-            lbl.set_label(f"{temp_str}/{target_str}")
+            temp_str = f"{temp:.0f}" if temp is not None else "--"
+            lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp_str}°</span>")
         return True
 
     def change_distance(self, widget, distance):
@@ -306,8 +302,5 @@ class Panel(ScreenPanel):
         for device, lbl in self.temp_labels.items():
             if device in data:
                 temp = self._printer.get_stat(device, "temperature")
-                target = self._printer.get_stat(device, "target")
                 if temp is not None:
-                    temp_str = f"{temp:.0f}°"
-                    target_str = f"{target:.0f}°" if target is not None else "--°"
-                    lbl.set_label(f"{temp_str}/{target_str}")
+                    lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp:.0f}°</span>")
