@@ -175,7 +175,7 @@
 /* --- Temperature +/- Controls --- */
 .temp-adjust-btn {
     background-color: #1A1D25;
-    border-radius: 10px;
+    border-radius: 4px;
     min-width: 40px;
     min-height: 40px;
     margin: 6px;
