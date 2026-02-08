@@ -167,21 +167,20 @@ class Panel(ScreenPanel):
         # Outer group container (rounded gray card)
         group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         group.get_style_context().add_class("temp-control-group")
+        group.set_size_request(280, -1)
 
-        # Minus button
+        # Minus button (left-aligned)
         minus_btn = Gtk.Button(label="-")
         minus_btn.get_style_context().add_class("temp-adjust-btn")
         minus_btn.set_size_request(64, 72)
         minus_btn.connect("clicked", self._adjust_temp, device, -self.temp_increment)
         group.pack_start(minus_btn, False, False, 0)
 
-        # Middle section: thermometer icon + label/temp
+        # Middle section: thermometer icon + label/temp (centered)
         middle = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         middle.set_valign(Gtk.Align.CENTER)
         middle.set_halign(Gtk.Align.CENTER)
         middle.set_hexpand(True)
-        middle.set_margin_start(4)
-        middle.set_margin_end(4)
 
         # Thermometer icon
         svg_path = os.path.join(
@@ -211,12 +210,12 @@ class Panel(ScreenPanel):
         middle.pack_start(text_box, False, False, 0)
         group.pack_start(middle, True, True, 0)
 
-        # Plus button
+        # Plus button (right-aligned)
         plus_btn = Gtk.Button(label="+")
         plus_btn.get_style_context().add_class("temp-adjust-btn")
         plus_btn.set_size_request(64, 72)
         plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
-        group.pack_start(plus_btn, False, False, 0)
+        group.pack_end(plus_btn, False, False, 0)
 
         # Store temp label for updates
         self.temp_labels[device] = temp_lbl
