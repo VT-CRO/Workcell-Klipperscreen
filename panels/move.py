@@ -126,17 +126,18 @@ class Panel(ScreenPanel):
 
         # ===== Bottom: Temperature Controls =====
         temp_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
-        temp_bar.set_halign(Gtk.Align.CENTER)
+        temp_bar.set_halign(Gtk.Align.FILL)
+        temp_bar.set_hexpand(True)
         temp_bar.set_margin_bottom(10)
         temp_bar.set_margin_top(4)
 
         # Nozzle temp control
         nozzle_ctrl = self._create_temp_control("Nozzle", "extruder", "thermometer-nozzle")
-        temp_bar.pack_start(nozzle_ctrl, False, False, 0)
+        temp_bar.pack_start(nozzle_ctrl, True, True, 0)
 
         # Bed temp control
         bed_ctrl = self._create_temp_control("Bed", "heater_bed", "thermometer-bed")
-        temp_bar.pack_start(bed_ctrl, False, False, 0)
+        temp_bar.pack_start(bed_ctrl, True, True, 0)
 
         main_box.pack_end(temp_bar, False, False, 0)
 
@@ -215,7 +216,7 @@ class Panel(ScreenPanel):
         plus_btn.get_style_context().add_class("temp-adjust-btn")
         plus_btn.set_size_request(48, 48)
         plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
-        group.pack_start(plus_btn, False, False, 0)
+        group.pack_end(plus_btn, False, False, 0)
 
         # Store temp label for updates
         self.temp_labels[device] = temp_lbl
