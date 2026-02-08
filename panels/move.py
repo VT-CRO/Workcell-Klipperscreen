@@ -167,7 +167,7 @@ class Panel(ScreenPanel):
         # Outer group container (rounded gray card)
         group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         group.get_style_context().add_class("temp-control-group")
-        group.set_size_request(400, -1)
+        group.set_size_request(330, -1)
 
         # Minus button (left-aligned)
         minus_btn = Gtk.Button(label="-")
