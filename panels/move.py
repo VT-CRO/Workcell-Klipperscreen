@@ -203,7 +203,7 @@ class Panel(ScreenPanel):
         text_box.pack_start(name_lbl, False, False, 0)
 
         temp_lbl = Gtk.Label()
-        temp_lbl.set_markup("<span size='xx-large' weight='bold'>--°</span>")
+        temp_lbl.set_markup("<span size='xx-large'>--°</span>")
         temp_lbl.get_style_context().add_class("temp-value-large")
         temp_lbl.set_halign(Gtk.Align.START)
         text_box.pack_start(temp_lbl, False, False, 0)
@@ -240,9 +240,9 @@ class Panel(ScreenPanel):
     def _update_temps(self):
         """Update temperature displays."""
         for device, lbl in self.temp_labels.items():
-            temp = self._printer.get_stat(device, "temperature")
+            temp = self._printer.get_stat(device, "target")
             temp_str = f"{temp:.0f}" if temp is not None else "--"
-            lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp_str}°</span>")
+            lbl.set_markup(f"<span size='xx-large'>{temp_str}°</span>")
         return True
 
     def change_distance(self, widget, distance):
@@ -301,6 +301,6 @@ class Panel(ScreenPanel):
         # Update temperatures from live data
         for device, lbl in self.temp_labels.items():
             if device in data:
-                temp = self._printer.get_stat(device, "temperature")
+                temp = self._printer.get_stat(device, "target")
                 if temp is not None:
-                    lbl.set_markup(f"<span size='xx-large' weight='bold'>{temp:.0f}°</span>")
+                    lbl.set_markup(f"<span size='xx-large'>{temp:.0f}°</span>")
