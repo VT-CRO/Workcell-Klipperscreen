@@ -138,6 +138,9 @@ class BasePanel(ScreenPanel):
 
     def _on_nav_clicked(self, widget, panel_name, nav_key):
         """Handle nav button click - navigate to the target panel."""
+        # If home is clicked while printing/paused, show job_status instead of main_menu
+        if panel_name == "main_menu" and self._screen.printer.state in ("printing", "paused"):
+            panel_name = "job_status"
         # Don't navigate if we're already on this panel
         if self._screen._cur_panels and panel_name == self._screen._cur_panels[-1]:
             return
