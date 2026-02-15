@@ -398,9 +398,7 @@ class Panel(ScreenPanel):
 
     def pause(self, widget):
         self.buttons['pause'].set_sensitive(False)
-        self.buttons['resume'].set_sensitive(False)
         self._screen._ws.klippy.print_pause()
-        self._screen.show_all()
 
     def cancel(self, widget):
         buttons = [
