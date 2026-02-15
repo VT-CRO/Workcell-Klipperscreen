@@ -225,7 +225,10 @@ class Panel(ScreenPanel):
     def _adjust_temp(self, widget, device, increment):
         """Adjust temperature by increment."""
         current_target = self._printer.get_stat(device, "target") or 0
-        new_target = max(0, current_target + increment)
+        if current_target == 0 and increment > 0:
+            new_target = 10
+        else:
+            new_target = max(0, current_target + increment)
 
         # Enforce max temp
         max_temp = int(float(self._printer.get_config_section(device).get('max_temp', 300)))
