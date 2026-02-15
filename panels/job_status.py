@@ -69,7 +69,7 @@ class Panel(ScreenPanel):
         top_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         top_box.set_hexpand(True)
         top_box.set_vexpand(True)
-        top_box.set_margin_top(8)
+        top_box.set_valign(Gtk.Align.CENTER)
         top_box.set_margin_start(12)
         top_box.set_margin_end(12)
 
@@ -79,7 +79,7 @@ class Panel(ScreenPanel):
         self.labels['thumbnail'].connect("clicked", self.show_fullscreen_thumbnail)
         self.labels['thumbnail'].set_hexpand(True)
         self.labels['thumbnail'].set_vexpand(True)
-        self.labels['thumbnail'].set_size_request(225, 195)
+        self.labels['thumbnail'].set_size_request(169, 146)
         thumb_box = Gtk.Box()
         thumb_box.set_hexpand(True)
         thumb_box.set_vexpand(True)
