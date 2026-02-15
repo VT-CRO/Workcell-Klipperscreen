@@ -131,7 +131,8 @@ class Panel(ScreenPanel):
         self.buttons['pause'].set_hexpand(True)
         self.buttons['pause'].connect("clicked", self.pause)
         self.buttons['pause'].set_no_show_all(True)
-        self.buttons['pause'].show_all()
+        pause_inner.show_all()
+        self.buttons['pause'].show()
         info_box.pack_start(self.buttons['pause'], False, False, 0)
 
         # Resume button (hidden initially)
@@ -149,6 +150,7 @@ class Panel(ScreenPanel):
         self.buttons['resume'].set_hexpand(True)
         self.buttons['resume'].connect("clicked", self.resume)
         self.buttons['resume'].set_no_show_all(True)
+        resume_inner.show_all()
         info_box.pack_start(self.buttons['resume'], False, False, 0)
 
         # Cancel button
@@ -623,7 +625,7 @@ class Panel(ScreenPanel):
 
     def set_state(self, state, msg=""):
         if state == "printing":
-            self.buttons['pause'].show_all()
+            self.buttons['pause'].show()
             self.buttons['resume'].hide()
             self.buttons['cancel'].show()
             self.buttons['pause'].set_sensitive(True)
@@ -631,7 +633,7 @@ class Panel(ScreenPanel):
             self.can_close = False
         elif state == "paused":
             self.buttons['pause'].hide()
-            self.buttons['resume'].show_all()
+            self.buttons['resume'].show()
             self.buttons['resume'].set_sensitive(True)
             self.buttons['cancel'].show()
             self.buttons['cancel'].set_sensitive(True)
