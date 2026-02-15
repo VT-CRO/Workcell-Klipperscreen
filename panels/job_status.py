@@ -393,8 +393,8 @@ class Panel(ScreenPanel):
             logging.info(f"Could not restart {self.filename}")
 
     def resume(self, widget):
+        self.buttons['resume'].set_sensitive(False)
         self._screen._ws.klippy.print_resume()
-        self._screen.show_all()
 
     def pause(self, widget):
         self.buttons['pause'].set_sensitive(False)
