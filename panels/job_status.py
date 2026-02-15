@@ -130,13 +130,18 @@ class Panel(ScreenPanel):
         self.buttons['pause'].add(pause_inner)
         self.buttons['pause'].set_hexpand(True)
         self.buttons['pause'].connect("clicked", self.pause)
+        self.buttons['pause'].set_no_show_all(True)
+        self.buttons['pause'].show()
         info_box.pack_start(self.buttons['pause'], False, False, 0)
 
         # Resume button (hidden initially)
+        resume_icon_path = os.path.join(styles_dir, "playButton.svg")
         self.buttons['resume'] = Gtk.Button()
         self.buttons['resume'].get_style_context().add_class("control-button")
         resume_inner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        resume_inner.pack_start(Gtk.Label(label="  ▶"), False, False, 0)
+        resume_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(resume_icon_path, 43, 43)
+        resume_img = Gtk.Image.new_from_pixbuf(resume_pixbuf)
+        resume_inner.pack_start(resume_img, False, False, 0)
         resume_lbl = Gtk.Label(label="RESUME")
         resume_lbl.set_hexpand(True)
         resume_inner.pack_start(resume_lbl, True, True, 0)
@@ -651,11 +656,6 @@ class Panel(ScreenPanel):
             if self.thumb_dialog:
                 self.close_dialog(self.thumb_dialog)
         self.content.show_all()
-        # Re-hide resume if printing
-        if self.state == "printing":
-            self.buttons['resume'].hide()
-        elif self.state == "paused":
-            self.buttons['pause'].hide()
 
     def _add_timeout(self, timeout):
         self._screen.screensaver.close()
