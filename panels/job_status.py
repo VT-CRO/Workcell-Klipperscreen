@@ -117,13 +117,13 @@ class Panel(ScreenPanel):
         info_box.pack_start(Gtk.Box(), False, False, 2)
 
         # Pause button
-        pause_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        pause_icon = Gtk.Label(label="⏸")
-        pause_icon.set_margin_start(12)
+        pause_icon_path = os.path.join(styles_dir, "pauseButton.svg")
         self.buttons['pause'] = Gtk.Button()
         self.buttons['pause'].get_style_context().add_class("control-button")
         pause_inner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        pause_inner.pack_start(Gtk.Label(label="  ⏸"), False, False, 0)
+        pause_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(pause_icon_path, 36, 36)
+        pause_img = Gtk.Image.new_from_pixbuf(pause_pixbuf)
+        pause_inner.pack_start(pause_img, False, False, 0)
         pause_lbl = Gtk.Label(label="PAUSE")
         pause_lbl.set_hexpand(True)
         pause_inner.pack_start(pause_lbl, True, True, 0)
@@ -150,7 +150,10 @@ class Panel(ScreenPanel):
         self.buttons['cancel'] = Gtk.Button()
         self.buttons['cancel'].get_style_context().add_class("control-button")
         cancel_inner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        cancel_inner.pack_start(Gtk.Label(label="  ⊗"), False, False, 0)
+        cancel_icon_path = os.path.join(styles_dir, "cancelButton.svg")
+        cancel_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(cancel_icon_path, 36, 36)
+        cancel_img = Gtk.Image.new_from_pixbuf(cancel_pixbuf)
+        cancel_inner.pack_start(cancel_img, False, False, 0)
         cancel_lbl = Gtk.Label(label="CANCEL")
         cancel_lbl.set_hexpand(True)
         cancel_inner.pack_start(cancel_lbl, True, True, 0)
@@ -310,7 +313,7 @@ class Panel(ScreenPanel):
 
         # Filled portion
         filled_width = max(width * self.progress, height)
-        ctx.set_source_rgb(0.898, 0.224, 0.208)
+        ctx.set_source_rgb(0.173, 0.847, 0.102)
         self._rounded_rect(ctx, 0, 0, filled_width, height, radius)
         ctx.fill()
 
