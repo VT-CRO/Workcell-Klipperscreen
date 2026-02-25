@@ -116,7 +116,7 @@ class Panel(ScreenPanel):
             if d == self.distance:
                 btn.get_style_context().add_class("jog-distance-active")
             btn.connect("clicked", self.change_distance, d)
-            btn.set_size_request(100, 44)
+            btn.set_size_request(100, 72)
             self.labels[f"dist_{d}"] = btn
             dist_box.pack_start(btn, False, False, 0)
 
