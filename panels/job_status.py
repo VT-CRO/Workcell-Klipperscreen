@@ -76,6 +76,7 @@ class Panel(ScreenPanel):
         # Left: Thumbnail
         self.labels = {}
         self.labels['thumbnail'] = self._gtk.Button("file")
+        self.labels['thumbnail'].get_style_context().add_class("job-thumbnail")
         self.labels['thumbnail'].connect("clicked", self.show_fullscreen_thumbnail)
         self.labels['thumbnail'].set_hexpand(True)
         self.labels['thumbnail'].set_vexpand(True)
@@ -673,6 +674,8 @@ class Panel(ScreenPanel):
         pixbuf = self.get_file_image(self.filename, width, height)
         if pixbuf is None:
             return
+        if not pixbuf.get_has_alpha():
+            pixbuf = pixbuf.add_alpha(True, 0, 0, 0)
         if image := find_widget(self.labels['thumbnail'], Gtk.Image):
             image.set_from_pixbuf(pixbuf)
 
@@ -680,6 +683,8 @@ class Panel(ScreenPanel):
         pixbuf = self.get_file_image(self.filename, self._screen.width * .9, self._screen.height * .75)
         if pixbuf is None:
             return
+        if not pixbuf.get_has_alpha():
+            pixbuf = pixbuf.add_alpha(True, 0, 0, 0)
         image = Gtk.Image.new_from_pixbuf(pixbuf)
         image.set_vexpand(True)
         self.thumb_dialog = self._gtk.Dialog(self.filename, None, image, self.close_dialog)

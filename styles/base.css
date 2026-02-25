@@ -111,6 +111,18 @@
     color: #888888;
 }
 
+/* --- Job Status Thumbnail --- */
+.job-thumbnail {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.job-thumbnail:active {
+    background-color: transparent;
+}
+
 /* --- Jog / Control Buttons --- */
 .jog-button {
     background-color: #3A3D45;
