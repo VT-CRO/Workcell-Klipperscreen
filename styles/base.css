@@ -163,11 +163,11 @@
 }
 
 .jog-distance-active {
-    background-color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .jog-distance-active label {
-    color: #1E2028;
+    color: white;
 }
 
 /* --- Temperature +/- Controls --- */
