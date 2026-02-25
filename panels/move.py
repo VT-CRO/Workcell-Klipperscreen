@@ -107,7 +107,7 @@ class Panel(ScreenPanel):
         top_row.pack_start(xy_box, False, False, 0)
 
         # Jog Distance Selector (right, vertical stack)
-        dist_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        dist_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         dist_box.set_valign(Gtk.Align.CENTER)
 
         for d in self.distances:
@@ -116,7 +116,7 @@ class Panel(ScreenPanel):
             if d == self.distance:
                 btn.get_style_context().add_class("jog-distance-active")
             btn.connect("clicked", self.change_distance, d)
-            btn.set_size_request(100, 72)
+            btn.set_size_request(67, 48)
             self.labels[f"dist_{d}"] = btn
             dist_box.pack_start(btn, False, False, 0)
 
