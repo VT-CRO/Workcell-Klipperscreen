@@ -724,7 +724,14 @@ class Panel(ScreenPanel):
         logging.info(f"Update Metadata. File: {self.filename} Size: {self.file_metadata['size']}")
         if "object_height" in self.file_metadata:
             self.oheight = float(self.file_metadata['object_height'])
+
+        author = self.file_metadata.get('author', '')
+
         if "job_id" in self.file_metadata and self.file_metadata['job_id']:
             history = self._screen.apiclient.send_request(f"server/history/job?uid={self.file_metadata['job_id']}")
             if history and history['job']['status'] == "completed" and history['job']['print_duration']:
                 self.file_metadata["last_time"] = history['job']['print_duration']
+            if history and not author:
+                author = history['job'].get('user', '')
+
+        self.labels['author'].set_label(author if author else "")
