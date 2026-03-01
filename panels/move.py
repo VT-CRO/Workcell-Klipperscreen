@@ -42,9 +42,6 @@ class Panel(ScreenPanel):
         # Z Section (left)
         z_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         z_box.set_valign(Gtk.Align.CENTER)
-        z_label = Gtk.Label(label="Z")
-        z_label.get_style_context().add_class("section-label")
-        z_label.set_halign(Gtk.Align.CENTER)
         z_box.pack_start(z_label, False, False, 0)
 
         z_grid = Gtk.Grid()
@@ -55,6 +52,10 @@ class Panel(ScreenPanel):
         btn_zp = self._create_jog_button("∧", "Z", "+")
         z_grid.attach(btn_zp, 0, 0, 1, 1)
 
+        z_label = Gtk.Label(label="Z")
+        z_label.get_style_context().add_class("section-label")
+        z_label.set_halign(Gtk.Align.CENTER)
+        
         btn_zm = self._create_jog_button("∨", "Z", "-")
         z_grid.attach(btn_zm, 0, 1, 1, 1)
 
