@@ -49,10 +49,10 @@ class Panel(ScreenPanel):
         btn_zp = self._create_jog_button("∧", "Z", "+")
         z_grid.attach(btn_zp, 0, 0, 1, 1)
 
-        z_label = Gtk.Label(label="Z")
-        z_label.get_style_context().add_class("section-label")
-        z_label.set_halign(Gtk.Align.CENTER)
-        z_grid.attach(z_label, 0, 1, 1, 1)
+        #z_label = Gtk.Label(label="Z")
+        #z_label.get_style_context().add_class("section-label")
+        #z_label.set_halign(Gtk.Align.CENTER)
+        #z_grid.attach(z_label, 0, 1, 1, 1)
 
         btn_zm = self._create_jog_button("∨", "Z", "-")
         z_grid.attach(btn_zm, 0, 2, 1, 1)
@@ -107,7 +107,8 @@ class Panel(ScreenPanel):
         dist_box.set_valign(Gtk.Align.CENTER)
 
         for d in self.distances:
-            btn = Gtk.Button(label=f"{d}mm")
+            #btn = Gtk.Button(label=f"{d}mm")
+            btn = Gtk.Button(label=f"{d}")
             btn.get_style_context().add_class("jog-distance")
             if d == self.distance:
                 btn.get_style_context().add_class("jog-distance-active")
@@ -198,7 +199,7 @@ class Panel(ScreenPanel):
         text_box.pack_start(name_lbl, False, False, 0)
 
         temp_lbl = Gtk.Label()
-        temp_lbl.set_markup("<span size='xx-large'>--°</span>")
+        temp_lbl.set_markup("<span size='xx-large'>--° C</span>")
         temp_lbl.get_style_context().add_class("temp-value-large")
         temp_lbl.set_halign(Gtk.Align.START)
         text_box.pack_start(temp_lbl, False, False, 0)
