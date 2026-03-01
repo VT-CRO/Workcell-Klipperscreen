@@ -90,7 +90,7 @@ class Panel(ScreenPanel):
         btn_home.get_style_context().add_class("jog-home-button")
         home_icon = Gtk.Image.new_from_file(os.path.join(os.path.dirname(__file__), "../styles/nav_home.svg"))
         btn_home.add(home_icon)
-        btn_home.set_size_request(72, 72)
+        btn_home.set_size_request(108, 108)
         btn_home.connect("clicked", self.home)
         xy_grid.attach(btn_home, 1, 1, 1, 1)
 
