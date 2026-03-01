@@ -88,9 +88,10 @@ class Panel(ScreenPanel):
         # Home button - row 1, col 1 (center)
         btn_home = Gtk.Button()
         btn_home.get_style_context().add_class("jog-home-button")
-        home_icon = Gtk.Image.new_from_file(os.path.join(os.path.dirname(__file__), "../styles/nav_home.svg"))
+        home_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(os.path.join(os.path.dirname(__file__), "../styles/nav_home.svg"), 36, 36)
+        home_icon = Gtk.Image.new_from_pixbuf(home_pixbuf)
         btn_home.add(home_icon)
-        btn_home.set_size_request(108, 108)
+        btn_home.set_size_request(72, 72)
         btn_home.connect("clicked", self.home)
         xy_grid.attach(btn_home, 1, 1, 1, 1)
 
