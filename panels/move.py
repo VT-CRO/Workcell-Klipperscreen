@@ -108,7 +108,7 @@ class Panel(ScreenPanel):
         xy_grid.attach(btn_yp, 1, 0, 1, 1)
 
         # X- (left arrow) - row 1, col 0
-        btn_xm = self._create_jog_button("<", "X", "-")
+        btn_xm = self._create_jog_button("&lt;", "X", "-")
         xy_grid.attach(btn_xm, 0, 1, 1, 1)
 
         # Home button - row 1, col 1 (center)
