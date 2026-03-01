@@ -56,10 +56,10 @@ class Panel(ScreenPanel):
         z_grid.set_column_spacing(4)
         z_grid.set_halign(Gtk.Align.CENTER)
 
-        btn_zp = self._create_jog_button("^", "Z", "+")
+        btn_zp = self._create_jog_button(0, "Z", "+")
         z_grid.attach(btn_zp, 0, 0, 1, 1)
 
-        btn_zm = self._create_jog_button("v", "Z", "-")
+        btn_zm = self._create_jog_button(180, "Z", "-")
         z_grid.attach(btn_zm, 0, 1, 1, 1)
 
         z_box.pack_start(z_grid, False, False, 0)
@@ -78,10 +78,10 @@ class Panel(ScreenPanel):
         e_grid.set_column_spacing(4)
         e_grid.set_halign(Gtk.Align.CENTER)
 
-        btn_ep = self._create_jog_button("^", "E", "+")
+        btn_ep = self._create_jog_button(0, "E", "+")
         e_grid.attach(btn_ep, 0, 0, 1, 1)
 
-        btn_em = self._create_jog_button("v", "E", "-")
+        btn_em = self._create_jog_button(180, "E", "-")
         e_grid.attach(btn_em, 0, 1, 1, 1)
 
         e_box.pack_start(e_grid, False, False, 0)
@@ -104,11 +104,11 @@ class Panel(ScreenPanel):
         xy_grid.set_halign(Gtk.Align.CENTER)
 
         # Y+ (up arrow) - row 0, col 1
-        btn_yp = self._create_jog_button("Y+", "Y", "+") #-=---------------------------------------------------
+        btn_yp = self._create_jog_button(0, "Y", "+")
         xy_grid.attach(btn_yp, 1, 0, 1, 1)
 
         # X- (left arrow) - row 1, col 0
-        btn_xm = self._create_jog_button("X-", "X", "-")
+        btn_xm = self._create_jog_button(90, "X", "-")
         xy_grid.attach(btn_xm, 0, 1, 1, 1)
 
         # Home button - row 1, col 1 (center)
@@ -122,11 +122,11 @@ class Panel(ScreenPanel):
         xy_grid.attach(btn_home, 1, 1, 1, 1)
 
         # X+ (right arrow) - row 1, col 2
-        btn_xp = self._create_jog_button("X+", "X", "+")
+        btn_xp = self._create_jog_button(270, "X", "+")
         xy_grid.attach(btn_xp, 2, 1, 1, 1)
 
         # Y- (down arrow) - row 2, col 1
-        btn_ym = self._create_jog_button("Y-", "Y", "-")
+        btn_ym = self._create_jog_button(180, "Y", "-")
         xy_grid.attach(btn_ym, 1, 2, 1, 1)
 
         xy_box.pack_start(xy_grid, False, False, 0)
@@ -177,12 +177,13 @@ class Panel(ScreenPanel):
         # Start temp update timer
         GLib.timeout_add_seconds(1, self._update_temps)
 
-    def _create_jog_button(self, symbol, axis, direction):
-        """Create a jog movement button."""
+    def _create_jog_button(self, angle, axis, direction):
+        """Create a jog movement button. angle rotates the caret: 0=up 90=left 180=down 270=right."""
         btn = Gtk.Button()
         btn.get_style_context().add_class("jog-button")
         lbl = Gtk.Label()
-        lbl.set_markup(f"<span size='large'>{symbol}</span>")
+        lbl.set_markup("<span size='xx-large'><b>^</b></span>")
+        lbl.set_angle(angle)
         btn.add(lbl)
         btn.set_size_request(72, 72)
         btn.connect("clicked", self.move, axis, direction)
