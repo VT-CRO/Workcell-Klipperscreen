@@ -40,14 +40,11 @@ class Panel(ScreenPanel):
         top_row.set_vexpand(True)
 
         # Z Section (left)
-        z_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        z_box.set_valign(Gtk.Align.CENTER)
-        z_box.pack_start(z_label, False, False, 0)
-
         z_grid = Gtk.Grid()
         z_grid.set_row_spacing(4)
         z_grid.set_column_spacing(4)
         z_grid.set_halign(Gtk.Align.CENTER)
+        z_grid.set_valign(Gtk.Align.CENTER)
 
         btn_zp = self._create_jog_button("∧", "Z", "+")
         z_grid.attach(btn_zp, 0, 0, 1, 1)
@@ -55,12 +52,12 @@ class Panel(ScreenPanel):
         z_label = Gtk.Label(label="Z")
         z_label.get_style_context().add_class("section-label")
         z_label.set_halign(Gtk.Align.CENTER)
-        
-        btn_zm = self._create_jog_button("∨", "Z", "-")
-        z_grid.attach(btn_zm, 0, 1, 1, 1)
+        z_grid.attach(z_label, 0, 1, 1, 1)
 
-        z_box.pack_start(z_grid, False, False, 0)
-        top_row.pack_start(z_box, False, False, 0)
+        btn_zm = self._create_jog_button("∨", "Z", "-")
+        z_grid.attach(btn_zm, 0, 2, 1, 1)
+
+        top_row.pack_start(z_grid, False, False, 0)
 
         # X/Y Section (center)
         xy_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
