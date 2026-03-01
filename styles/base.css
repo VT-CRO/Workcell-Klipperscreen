@@ -161,10 +161,10 @@
 .jog-distance {
     background-color: #2A2D35;
     border-radius: 8px;
-    min-width: 90px;
-    min-height: 50px;
+    min-width: 54px;
+    min-height: 54px;
     margin: 3px;
-    padding: 4px 12px;
+    padding: 4px;
     border: 0;
 }
 
