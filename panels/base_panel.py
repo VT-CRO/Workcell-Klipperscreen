@@ -67,7 +67,8 @@ class BasePanel(ScreenPanel):
             ('home', os.path.join(styles_dir, "nav_home.svg"), 'main_menu'),
             ('controls', os.path.join(styles_dir, "nav_controls.svg"), 'move'),
             ('queue', os.path.join(styles_dir, "nav_queue.svg"), 'print_screen'),
-            ('filament', os.path.join(styles_dir, "nav_filament.svg"), 'filament_panel'),
+            ('filament', os.path.join(styles_dir, "nav_filament.svg"), 'AFC'),
+            #('filament', os.path.join(styles_dir, "nav_filament.svg"), 'filament_panel'),
         ]
 
         for key, icon_path, panel_name in nav_items:
@@ -164,7 +165,8 @@ class BasePanel(ScreenPanel):
             'job_status': 'home',
             'move': 'controls',
             'print_screen': 'queue',
-            'filament_panel': 'filament',
+            'AFC': 'filament',
+            #'filament_panel': 'filament',
         }
         nav_key = panel_to_nav.get(panel_name)
         if nav_key:
