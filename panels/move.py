@@ -39,10 +39,14 @@ class Panel(ScreenPanel):
         top_row.set_valign(Gtk.Align.CENTER)
         top_row.set_vexpand(True)
 
-        # Z Section (left)
+        # Z + Extruder Section (left)
+        ze_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        ze_box.set_valign(Gtk.Align.CENTER)
+
+        # Z Sub-section
         z_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         z_box.set_valign(Gtk.Align.CENTER)
-        z_label = Gtk.Label(label="")
+        z_label = Gtk.Label(label="Z")
         z_label.get_style_context().add_class("section-label")
         z_label.set_halign(Gtk.Align.CENTER)
         z_box.pack_start(z_label, False, False, 0)
@@ -52,16 +56,38 @@ class Panel(ScreenPanel):
         z_grid.set_column_spacing(4)
         z_grid.set_halign(Gtk.Align.CENTER)
 
-        # Z+ (up)
-        btn_zp = self._create_jog_button("Z+", "Z", "+")
+        btn_zp = self._create_jog_button("^", "Z", "+")
         z_grid.attach(btn_zp, 0, 0, 1, 1)
 
-        # Z- (down)
-        btn_zm = self._create_jog_button("Z-", "Z", "-")
+        btn_zm = self._create_jog_button("v", "Z", "-")
         z_grid.attach(btn_zm, 0, 1, 1, 1)
 
         z_box.pack_start(z_grid, False, False, 0)
-        top_row.pack_start(z_box, False, False, 0)
+        ze_box.pack_start(z_box, False, False, 0)
+
+        # Extruder Sub-section
+        e_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        e_box.set_valign(Gtk.Align.CENTER)
+        e_label = Gtk.Label(label="E")
+        e_label.get_style_context().add_class("section-label")
+        e_label.set_halign(Gtk.Align.CENTER)
+        e_box.pack_start(e_label, False, False, 0)
+
+        e_grid = Gtk.Grid()
+        e_grid.set_row_spacing(4)
+        e_grid.set_column_spacing(4)
+        e_grid.set_halign(Gtk.Align.CENTER)
+
+        btn_ep = self._create_jog_button("^", "E", "+")
+        e_grid.attach(btn_ep, 0, 0, 1, 1)
+
+        btn_em = self._create_jog_button("v", "E", "-")
+        e_grid.attach(btn_em, 0, 1, 1, 1)
+
+        e_box.pack_start(e_grid, False, False, 0)
+        ze_box.pack_start(e_box, False, False, 0)
+
+        top_row.pack_start(ze_box, False, False, 0)
 
         # X/Y Section (center)
         xy_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
@@ -268,6 +294,13 @@ class Panel(ScreenPanel):
             return
 
         a = axis.lower()
+
+        if a == "e":
+            dist = f"{direction}{self.distance}"
+            script = f"M83\nG1 E{dist} F300\nM82"
+            self._screen._send_action(widget, "printer.gcode.script", {"script": script})
+            return
+
         if self._config.get_config()["main"].getboolean(f"invert_{a}", False) and a != "z":
             direction = "-" if direction == "+" else "+"
 
