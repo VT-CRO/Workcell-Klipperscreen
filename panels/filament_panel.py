@@ -1,11 +1,9 @@
 import logging
-import os
-import pathlib
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk
 from ks_includes.screen_panel import ScreenPanel
 
 
@@ -17,13 +15,25 @@ FILAMENT_PROFILES = {
     'N/A':  (0, 0),
 }
 
-# Spool colors for display: (fill_r, fill_g, fill_b) for the spool icon tint
-SPOOL_COLORS = {
-    'PLA':  (0.93, 0.16, 0.16),   # Red
-    'PETG': (0.88, 0.88, 0.88),   # White/gray
-    'ABS':  (0.30, 0.30, 0.30),   # Dark gray
-    'N/A':  (0.30, 0.30, 0.30),   # Dark gray
+# Fallback spool colors if material not found in AFC data
+SPOOL_COLORS_FALLBACK = {
+    'PLA':  (0.18, 0.80, 0.44),
+    'PETG': (0.20, 0.60, 1.00),
+    'ABS':  (1.00, 0.60, 0.10),
+    'N/A':  (0.40, 0.40, 0.40),
 }
+
+
+def _hex_to_rgb(hex_color):
+    """Convert a hex color string (#RRGGBB or #RRGGBBAA) to (r, g, b) floats 0-1."""
+    hex_color = hex_color.lstrip('#')
+    try:
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        return r, g, b
+    except (ValueError, IndexError):
+        return 0.5, 0.5, 0.5
 
 
 class Panel(ScreenPanel):
@@ -31,15 +41,15 @@ class Panel(ScreenPanel):
         super().__init__(screen, title)
         self.content.get_style_context().add_class("customBG")
 
-        styles_dir = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles")
-        self.spool_svg_path = os.path.join(styles_dir, "spool.svg")
-
         self.selected_filament = None
         self.filament_buttons = {}
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
         self.has_unload = any("UNLOAD_FILAMENT" in macro.upper() for macro in macros)
+
+        # Fetch material colors from the BoxTurtle AFC system
+        self.material_colors = self._fetch_afc_material_colors(screen)
 
         # Main layout
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -83,6 +93,35 @@ class Panel(ScreenPanel):
             unload_btn.set_sensitive(False)
         main_box.pack_end(unload_btn, False, False, 0)
 
+    def _fetch_afc_material_colors(self, screen):
+        """
+        Query the BoxTurtle AFC system for lane data and build a
+        material -> (r, g, b) map using the first lane found per material type.
+        """
+        colors = {}
+        try:
+            api = screen.apiclient
+            result = api.post_request("printer/afc/status", json={})
+            if not isinstance(result, dict):
+                logging.warning("filament_panel: AFC status returned no data")
+                return colors
+
+            afc_data = result.get('result', {}).get('status:', {}).get('AFC', {})
+            for unit_name, unit_data in afc_data.items():
+                if unit_name == "system" or not isinstance(unit_data, dict):
+                    continue
+                for lane_name, lane_data in unit_data.items():
+                    if not isinstance(lane_data, dict) or not lane_name.startswith("lane"):
+                        continue
+                    material = (lane_data.get("material") or "").upper().strip()
+                    color_hex = lane_data.get("color")
+                    if material and color_hex and material not in colors:
+                        colors[material] = _hex_to_rgb(color_hex)
+                        logging.info(f"filament_panel: {material} -> {color_hex}")
+        except Exception as e:
+            logging.warning(f"filament_panel: could not fetch AFC colors: {e}")
+        return colors
+
     def _create_filament_button(self, filament_type):
         """Create a filament type selection button with spool icon."""
         btn = Gtk.Button()
@@ -94,10 +133,11 @@ class Panel(ScreenPanel):
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
 
-        # Spool icon (using a colored circle as spool representation)
+        # Spool icon — color from AFC data, fallback to defaults
         spool_area = Gtk.DrawingArea()
         spool_area.set_size_request(48, 48)
-        r, g, b = SPOOL_COLORS.get(filament_type, (0.5, 0.5, 0.5))
+        r, g, b = self.material_colors.get(filament_type) or \
+                  SPOOL_COLORS_FALLBACK.get(filament_type, (0.5, 0.5, 0.5))
         spool_area.connect("draw", self._draw_spool, r, g, b)
         inner.pack_start(spool_area, False, False, 0)
 
