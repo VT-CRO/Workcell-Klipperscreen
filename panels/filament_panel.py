@@ -82,16 +82,13 @@ class Panel(ScreenPanel):
 
         main_box.pack_start(grid, True, True, 0)
 
-        # Unload Filament button
-        unload_btn = Gtk.Button()
-        unload_btn.get_style_context().add_class("filament-unload")
-        unload_lbl = Gtk.Label(label="Unload Filament")
-        unload_btn.add(unload_lbl)
-        unload_btn.set_hexpand(True)
-        unload_btn.connect("clicked", self._unload_filament)
-        if not self.has_unload:
-            unload_btn.set_sensitive(False)
-        main_box.pack_end(unload_btn, False, False, 0)
+        # Advanced View button — navigates to the AFC panel
+        adv_btn = Gtk.Button()
+        adv_btn.get_style_context().add_class("filament-unload")
+        adv_btn.add(Gtk.Label(label="Advanced View"))
+        adv_btn.set_hexpand(True)
+        adv_btn.connect("clicked", self._open_afc_panel)
+        main_box.pack_end(adv_btn, False, False, 0)
 
     def _fetch_afc_material_colors(self, screen):
         """
@@ -206,13 +203,6 @@ class Panel(ScreenPanel):
             self._screen._ws.klippy.set_bed_temp(0)
             logging.info("Cleared temperatures (N/A selected)")
 
-    def _unload_filament(self, widget):
-        """Run the UNLOAD_FILAMENT macro."""
-        if self.has_unload:
-            self._screen._send_action(
-                widget, "printer.gcode.script",
-                {"script": "UNLOAD_FILAMENT"}
-            )
-            logging.info("Unload filament command sent")
-        else:
-            self._screen.show_popup_message("UNLOAD_FILAMENT macro not found")
+    def _open_afc_panel(self, _widget):
+        """Navigate to the AFC advanced view panel."""
+        self._screen.show_panel("AFC", title="AFC Status")
