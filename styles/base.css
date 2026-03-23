@@ -289,6 +289,57 @@
     background-color: #555860;
 }
 
+/* --- Filament Edit Popup --- */
+.filament-edit-overlay {
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
+.filament-edit-popup {
+    background-color: #2A2D35;
+    border-radius: 16px;
+    border: 1px solid #4A4D55;
+    padding: 20px 24px;
+    min-width: 260px;
+}
+
+.filament-edit-title {
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.filament-edit-close {
+    background: transparent;
+    border: 0;
+    color: #AAAAAA;
+    font-size: 1.1em;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+}
+
+.filament-edit-close:active {
+    color: white;
+}
+
+.filament-edit-combo {
+    min-height: 44px;
+}
+
+.filament-edit-confirm {
+    background-color: #4FC3F7;
+    border-radius: 10px;
+    border: 0;
+    color: #1A1D25;
+    font-size: 1.5em;
+    font-weight: bold;
+    min-height: 52px;
+}
+
+.filament-edit-confirm:active {
+    background-color: #29ABE2;
+}
+
 /* --- Progress Bar (Job Status) --- */
 .progress-bar-bg {
     background-color: #333640;
