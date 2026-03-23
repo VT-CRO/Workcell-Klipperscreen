@@ -270,6 +270,10 @@
     background-color: #3A4D55;
 }
 
+.filament-pencil {
+    background: transparent;
+}
+
 .filament-unload {
     background-color: #3A3D45;
     border-radius: 14px;

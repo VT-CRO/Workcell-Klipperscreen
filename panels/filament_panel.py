@@ -155,17 +155,18 @@ class Panel(ScreenPanel):
         )
         icon_stack.add_named(spool_area, "spool")
 
-        pencil_btn = Gtk.Button()
-        pencil_btn.get_style_context().add_class("filament-pencil")
+        pencil_box = Gtk.Box()
+        pencil_box.get_style_context().add_class("filament-pencil")
+        pencil_box.set_size_request(48, 48)
+        pencil_box.set_halign(Gtk.Align.CENTER)
+        pencil_box.set_valign(Gtk.Align.CENTER)
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.pencil_svg_path, 32, 32)
             pencil_img = Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception:
             pencil_img = Gtk.Image.new_from_icon_name("document-edit", Gtk.IconSize.LARGE_TOOLBAR)
-        pencil_btn.add(pencil_img)
-        pencil_btn.set_size_request(48, 48)
-        pencil_btn.connect("clicked", lambda _, si=slot_idx: self._open_edit_popup(si))
-        icon_stack.add_named(pencil_btn, "pencil")
+        pencil_box.pack_start(pencil_img, True, True, 0)
+        icon_stack.add_named(pencil_box, "pencil")
 
         icon_stack.set_visible_child_name("spool")
         self.slot_icon_stacks[slot_idx] = icon_stack
@@ -295,7 +296,13 @@ class Panel(ScreenPanel):
     # ------------------------------------------------------------------ #
 
     def _select_filament(self, widget, slot_idx):
-        """Select a filament slot and set temperature profile."""
+        """Select a filament slot. If already selected and non-empty, open the edit popup."""
+        # Second click on an already-selected non-empty slot → open popup
+        if self.selected_filament == slot_idx:
+            if self.slot_materials.get(slot_idx) or self.slot_has_filament.get(slot_idx):
+                self._open_edit_popup(slot_idx)
+            return
+
         for idx, btn in self.filament_buttons.items():
             btn.get_style_context().remove_class("filament-selected")
             stack = self.slot_icon_stacks.get(idx)
@@ -309,17 +316,6 @@ class Panel(ScreenPanel):
             stack = self.slot_icon_stacks.get(slot_idx)
             if stack:
                 stack.set_visible_child_name("pencil")
-
-        filament_type = self.slot_materials.get(slot_idx, "")
-        nozzle_temp, bed_temp = FILAMENT_PROFILES.get(filament_type, (0, 0))
-        if nozzle_temp > 0:
-            self._screen._ws.klippy.set_tool_temp(
-                self._printer.get_tool_number("extruder"), nozzle_temp
-            )
-            logging.info(f"Set nozzle temp to {nozzle_temp}°C for {filament_type}")
-        if bed_temp > 0:
-            self._screen._ws.klippy.set_bed_temp(bed_temp)
-            logging.info(f"Set bed temp to {bed_temp}°C for {filament_type}")
 
     # ------------------------------------------------------------------ #
     #  Unload                                                              #
