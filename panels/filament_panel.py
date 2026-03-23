@@ -33,11 +33,14 @@ class Panel(ScreenPanel):
 
         styles_dir = os.path.join(pathlib.Path(__file__).parent.resolve().parent, "styles")
         self.spool_svg_path = os.path.join(styles_dir, "spool.svg")
+        self.pencil_svg_path = os.path.join(styles_dir, "pencil.svg")
 
         self.selected_filament = None
         self.filament_buttons = {}   # slot_idx → Gtk.Button
         self.slot_lane_names = {}    # slot_idx → AFC lane name (e.g. "lane1")
         self.slot_materials = {}     # slot_idx → material string (e.g. "PLA") or ""
+        self.slot_has_filament = {}  # slot_idx → bool
+        self.slot_icon_stacks = {}   # slot_idx → Gtk.Stack (spool / pencil pages)
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -71,6 +74,7 @@ class Panel(ScreenPanel):
             lane_name, material, has_filament = afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False)
             self.slot_lane_names[slot_idx] = lane_name
             self.slot_materials[slot_idx] = material
+            self.slot_has_filament[slot_idx] = has_filament
             btn = self._create_filament_button(slot_idx, lane_name, material, has_filament)
             self.filament_buttons[slot_idx] = btn
             grid.attach(btn, col, row, 1, 1)
@@ -119,12 +123,32 @@ class Panel(ScreenPanel):
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
 
-        # Spool icon — color based on material if known
+        # Icon area: stack that shows spool normally, pencil when selected
+        icon_stack = Gtk.Stack()
+        icon_stack.set_transition_type(Gtk.StackTransitionType.NONE)
+        icon_stack.set_size_request(48, 48)
+
         spool_area = Gtk.DrawingArea()
         spool_area.set_size_request(48, 48)
         r, g, b = SPOOL_COLORS.get(material, (0.5, 0.5, 0.5))
         spool_area.connect("draw", self._draw_spool, r, g, b)
-        inner.pack_start(spool_area, False, False, 0)
+        icon_stack.add_named(spool_area, "spool")
+
+        pencil_btn = Gtk.Button()
+        pencil_btn.get_style_context().add_class("filament-pencil")
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.pencil_svg_path, 32, 32)
+            pencil_img = Gtk.Image.new_from_pixbuf(pixbuf)
+        except Exception:
+            pencil_img = Gtk.Image.new_from_icon_name("document-edit", Gtk.IconSize.LARGE_TOOLBAR)
+        pencil_btn.add(pencil_img)
+        pencil_btn.set_size_request(48, 48)
+        pencil_btn.connect("clicked", lambda *_: None)  # placeholder
+        icon_stack.add_named(pencil_btn, "pencil")
+
+        icon_stack.set_visible_child_name("spool")
+        self.slot_icon_stacks[slot_idx] = icon_stack
+        inner.pack_start(icon_stack, False, False, 0)
 
         # Label: material if known, "N/A" if loaded but unknown, "Empty" if no filament
         display = material if material else ("N/A" if has_filament else "Empty")
@@ -163,15 +187,25 @@ class Panel(ScreenPanel):
 
         return True
 
-    def _select_filament(self, widget, filament_type):
-        """Select a filament type and set temperature profile."""
-        # Update visual selection
-        for ftype, btn in self.filament_buttons.items():
-            ctx = btn.get_style_context()
-            ctx.remove_class("filament-selected")
+    def _select_filament(self, widget, slot_idx):
+        """Select a filament slot and set temperature profile."""
+        # Reset all buttons and icon stacks
+        for idx, btn in self.filament_buttons.items():
+            btn.get_style_context().remove_class("filament-selected")
+            stack = self.slot_icon_stacks.get(idx)
+            if stack:
+                stack.set_visible_child_name("spool")
 
         widget.get_style_context().add_class("filament-selected")
-        self.selected_filament = filament_type
+        self.selected_filament = slot_idx
+
+        # Show pencil only for non-empty slots
+        if self.slot_materials.get(slot_idx) or self.slot_has_filament.get(slot_idx):
+            stack = self.slot_icon_stacks.get(slot_idx)
+            if stack:
+                stack.set_visible_child_name("pencil")
+
+        filament_type = self.slot_materials.get(slot_idx, "")
 
         # Set temperature profile
         nozzle_temp, bed_temp = FILAMENT_PROFILES.get(filament_type, (0, 0))
@@ -183,14 +217,6 @@ class Panel(ScreenPanel):
         if bed_temp > 0:
             self._screen._ws.klippy.set_bed_temp(bed_temp)
             logging.info(f"Set bed temp to {bed_temp}°C for {filament_type}")
-
-        if filament_type == 'N/A':
-            # Clear temperatures
-            self._screen._ws.klippy.set_tool_temp(
-                self._printer.get_tool_number("extruder"), 0
-            )
-            self._screen._ws.klippy.set_bed_temp(0)
-            logging.info("Cleared temperatures (N/A selected)")
 
     def _unload_filament(self, widget):
         """Run the UNLOAD_FILAMENT macro."""
