@@ -176,3 +176,41 @@ class Panel(ScreenPanel):
             logging.info("Unload filament command sent")
         else:
             self._screen.show_popup_message("UNLOAD_FILAMENT macro not found")
+
+    # --- AFC integration ---
+
+    def afc_change_tool(self, lane_name):
+        """Switch the active tool to the given AFC lane. (CHANGE_TOOL LANE=<name>)"""
+        self._screen._ws.klippy.gcode_script(f"CHANGE_TOOL LANE={lane_name}")
+        logging.info(f"AFC: CHANGE_TOOL LANE={lane_name}")
+
+    def afc_lane_unload(self, lane_name):
+        """Eject filament from a specific AFC lane. (LANE_UNLOAD LANE=<name>)"""
+        self._screen._ws.klippy.gcode_script(f"LANE_UNLOAD LANE={lane_name}")
+        logging.info(f"AFC: LANE_UNLOAD LANE={lane_name}")
+
+    def afc_tool_unload(self):
+        """Retract filament from the extruder back to the AFC. (TOOL_UNLOAD)"""
+        self._screen._ws.klippy.gcode_script("TOOL_UNLOAD")
+        logging.info("AFC: TOOL_UNLOAD")
+
+    def afc_set_lane_loaded(self, lane_name):
+        """Mark a lane as the currently loaded lane. (SET_LANE_LOADED LANE=<name>)"""
+        self._screen._ws.klippy.gcode_script(f"SET_LANE_LOADED LANE={lane_name}")
+        logging.info(f"AFC: SET_LANE_LOADED LANE={lane_name}")
+
+    def afc_unset_lane_loaded(self):
+        """Clear the currently loaded lane marker. (UNSET_LANE_LOADED)"""
+        self._screen._ws.klippy.gcode_script("UNSET_LANE_LOADED")
+        logging.info("AFC: UNSET_LANE_LOADED")
+
+    def afc_get_status(self, callback):
+        """Query AFC filament status for all lanes.
+
+        callback(result) is called with the raw AFC status dict:
+            result['result']['status']['AFC']
+        """
+        self._screen.apiclient.send_request(
+            "printer/afc/status",
+            callback,
+        )
