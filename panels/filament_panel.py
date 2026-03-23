@@ -5,7 +5,7 @@ import pathlib
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf
 from ks_includes.screen_panel import ScreenPanel
 
 
@@ -219,6 +219,12 @@ class Panel(ScreenPanel):
         if self._edit_popup_widget is not None:
             return  # already open
 
+        # Measure screen so the popup can fill 70%
+        monitor = Gdk.Display.get_default().get_primary_monitor()
+        geo = monitor.get_geometry()
+        popup_w = int(geo.width * 0.70)
+        popup_h = int(geo.height * 0.70)
+
         # Full-area EventBox — absorbs all clicks so nothing behind it is reachable
         blocker = Gtk.EventBox()
         blocker.set_hexpand(True)
@@ -230,6 +236,7 @@ class Panel(ScreenPanel):
         popup.get_style_context().add_class("filament-edit-popup")
         popup.set_halign(Gtk.Align.CENTER)
         popup.set_valign(Gtk.Align.CENTER)
+        popup.set_size_request(popup_w, popup_h)
 
         # Header: title + X button
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -242,20 +249,39 @@ class Panel(ScreenPanel):
         header.pack_end(close_btn, False, False, 0)
         popup.pack_start(header, False, False, 0)
 
-        # Dropdown
-        combo = Gtk.ComboBoxText()
-        combo.get_style_context().add_class("filament-edit-combo")
-        for ft in FILAMENT_OPTIONS:
-            combo.append_text(ft)
+        # Filament type toggle buttons (replaces ComboBox — avoids GTK popup event conflicts)
         current = self.slot_materials.get(slot_idx, "")
-        idx = FILAMENT_OPTIONS.index(current) if current in FILAMENT_OPTIONS else 0
-        combo.set_active(idx)
-        popup.pack_start(combo, False, False, 0)
+        self._edit_selected_type = [current if current in FILAMENT_OPTIONS else FILAMENT_OPTIONS[0]]
+        type_btns = {}
+
+        type_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        type_box.set_hexpand(True)
+
+        def on_type_toggled(btn, ft):
+            if btn.get_active():
+                self._edit_selected_type[0] = ft
+                for other_ft, other_btn in type_btns.items():
+                    if other_ft != ft and other_btn.get_active():
+                        other_btn.handler_block_by_func(on_type_toggled)
+                        other_btn.set_active(False)
+                        other_btn.handler_unblock_by_func(on_type_toggled)
+
+        for ft in FILAMENT_OPTIONS:
+            tb = Gtk.ToggleButton(label=ft)
+            tb.get_style_context().add_class("filament-type-btn")
+            tb.set_hexpand(True)
+            tb.set_vexpand(True)
+            tb.set_active(ft == self._edit_selected_type[0])
+            type_btns[ft] = tb
+            tb.connect("toggled", on_type_toggled, ft)
+            type_box.pack_start(tb, True, True, 0)
+
+        popup.pack_start(type_box, True, True, 0)
 
         # Confirm button
         confirm_btn = Gtk.Button(label="✓")
         confirm_btn.get_style_context().add_class("filament-edit-confirm")
-        confirm_btn.connect("clicked", lambda *_: self._confirm_filament_edit(slot_idx, combo))
+        confirm_btn.connect("clicked", lambda *_: self._confirm_filament_edit(slot_idx))
         popup.pack_start(confirm_btn, False, False, 0)
 
         blocker.add(popup)
@@ -271,9 +297,9 @@ class Panel(ScreenPanel):
             self._overlay.remove(self._edit_popup_widget)
             self._edit_popup_widget = None
 
-    def _confirm_filament_edit(self, slot_idx, combo):
-        """Apply the chosen filament type to the slot and close the popup."""
-        new_material = combo.get_active_text()
+    def _confirm_filament_edit(self, slot_idx):
+        """Apply the chosen filament type to the slot, push to AFC, and close the popup."""
+        new_material = self._edit_selected_type[0] if self._edit_selected_type else None
         if new_material:
             self.slot_materials[slot_idx] = new_material
             self.slot_has_filament[slot_idx] = True
@@ -287,7 +313,13 @@ class Panel(ScreenPanel):
             if spool_area:
                 spool_area.queue_draw()
 
-            logging.info(f"Updated slot {slot_idx} material to {new_material}")
+            # Persist to AFC so the change survives navigation
+            lane_name = self.slot_lane_names.get(slot_idx)
+            if lane_name:
+                self._screen._ws.klippy.gcode_script(
+                    f"SET_MATERIAL LANE={lane_name} MATERIAL={new_material}"
+                )
+                logging.info(f"AFC: SET_MATERIAL LANE={lane_name} MATERIAL={new_material}")
 
         self._close_edit_popup()
 
