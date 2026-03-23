@@ -60,7 +60,7 @@ class BasePanel(ScreenPanel):
         logo_box.set_margin_bottom(4)
         logo_box.add(logo_image)
         self.nav_bar.pack_start(logo_box, False, False, 0)
-
+ 
         # Nav button definitions: (key, icon_svg, panel_name)
         self.nav_buttons = {}
         nav_items = [
