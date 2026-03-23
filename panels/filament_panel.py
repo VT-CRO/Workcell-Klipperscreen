@@ -68,10 +68,10 @@ class Panel(ScreenPanel):
         positions = [(0, 0), (1, 0), (0, 1), (1, 1)]
 
         for slot_idx, (col, row) in enumerate(positions):
-            lane_name, material = afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "")
+            lane_name, material, has_filament = afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False)
             self.slot_lane_names[slot_idx] = lane_name
             self.slot_materials[slot_idx] = material
-            btn = self._create_filament_button(slot_idx, lane_name, material)
+            btn = self._create_filament_button(slot_idx, lane_name, material, has_filament)
             self.filament_buttons[slot_idx] = btn
             grid.attach(btn, col, row, 1, 1)
 
@@ -101,13 +101,14 @@ class Panel(ScreenPanel):
                     if not isinstance(lane_data, dict) or not lane_name.startswith("lane"):
                         continue
                     material = (lane_data.get("material") or "").strip().upper()
-                    lanes.append((lane_name, material))
+                    has_filament = bool(lane_data.get("load") or lane_data.get("prep"))
+                    lanes.append((lane_name, material, has_filament))
             return lanes[:4]
         except Exception as e:
             logging.warning(f"Could not fetch AFC status: {e}")
             return []
 
-    def _create_filament_button(self, slot_idx, lane_name, material):
+    def _create_filament_button(self, slot_idx, lane_name, material, has_filament=False):
         """Create a filament slot button showing the AFC lane material."""
         btn = Gtk.Button()
         btn.get_style_context().add_class("filament-button")
@@ -125,8 +126,8 @@ class Panel(ScreenPanel):
         spool_area.connect("draw", self._draw_spool, r, g, b)
         inner.pack_start(spool_area, False, False, 0)
 
-        # Label: material name, or "Empty" if none
-        display = material if material else "Empty"
+        # Label: material if known, "N/A" if loaded but unknown, "Empty" if no filament
+        display = material if material else ("N/A" if has_filament else "Empty")
         lbl = Gtk.Label(label=display)
         lbl.set_halign(Gtk.Align.START)
         inner.pack_start(lbl, False, False, 0)
