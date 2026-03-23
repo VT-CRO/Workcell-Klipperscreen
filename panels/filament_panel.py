@@ -35,7 +35,9 @@ class Panel(ScreenPanel):
         self.spool_svg_path = os.path.join(styles_dir, "spool.svg")
 
         self.selected_filament = None
-        self.filament_buttons = {}
+        self.filament_buttons = {}   # slot_idx → Gtk.Button
+        self.slot_lane_names = {}    # slot_idx → AFC lane name (e.g. "lane1")
+        self.slot_materials = {}     # slot_idx → material string (e.g. "PLA") or ""
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -62,12 +64,15 @@ class Panel(ScreenPanel):
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(True)
 
-        filament_types = ['PLA', 'PETG', 'ABS', 'N/A']
+        afc_slots = self._fetch_afc_slots()  # [(lane_name, material), ...] up to 4
         positions = [(0, 0), (1, 0), (0, 1), (1, 1)]
 
-        for ftype, (col, row) in zip(filament_types, positions):
-            btn = self._create_filament_button(ftype)
-            self.filament_buttons[ftype] = btn
+        for slot_idx, (col, row) in enumerate(positions):
+            lane_name, material = afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "")
+            self.slot_lane_names[slot_idx] = lane_name
+            self.slot_materials[slot_idx] = material
+            btn = self._create_filament_button(slot_idx, lane_name, material)
+            self.filament_buttons[slot_idx] = btn
             grid.attach(btn, col, row, 1, 1)
 
         main_box.pack_start(grid, True, True, 0)
@@ -83,8 +88,27 @@ class Panel(ScreenPanel):
             unload_btn.set_sensitive(False)
         main_box.pack_end(unload_btn, False, False, 0)
 
-    def _create_filament_button(self, filament_type):
-        """Create a filament type selection button with spool icon."""
+    def _fetch_afc_slots(self):
+        """Query AFC status and return [(lane_name, material), ...] sorted by lane number."""
+        try:
+            result = self._screen.apiclient.post_request("printer/afc/status", json={})
+            afc_data = result.get('result', {}).get('status:', {}).get('AFC', {})
+            lanes = []
+            for _, unit_data in sorted(afc_data.items()):
+                if not isinstance(unit_data, dict):
+                    continue
+                for lane_name, lane_data in sorted(unit_data.items()):
+                    if not isinstance(lane_data, dict) or not lane_name.startswith("lane"):
+                        continue
+                    material = (lane_data.get("material") or "").strip().upper()
+                    lanes.append((lane_name, material))
+            return lanes[:4]
+        except Exception as e:
+            logging.warning(f"Could not fetch AFC status: {e}")
+            return []
+
+    def _create_filament_button(self, slot_idx, lane_name, material):
+        """Create a filament slot button showing the AFC lane material."""
         btn = Gtk.Button()
         btn.get_style_context().add_class("filament-button")
         btn.set_hexpand(True)
@@ -94,20 +118,21 @@ class Panel(ScreenPanel):
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
 
-        # Spool icon (using a colored circle as spool representation)
+        # Spool icon — color based on material if known
         spool_area = Gtk.DrawingArea()
         spool_area.set_size_request(48, 48)
-        r, g, b = SPOOL_COLORS.get(filament_type, (0.5, 0.5, 0.5))
+        r, g, b = SPOOL_COLORS.get(material, (0.5, 0.5, 0.5))
         spool_area.connect("draw", self._draw_spool, r, g, b)
         inner.pack_start(spool_area, False, False, 0)
 
-        # Filament label
-        lbl = Gtk.Label(label=filament_type)
+        # Label: material name, or "Empty" if none
+        display = material if material else "Empty"
+        lbl = Gtk.Label(label=display)
         lbl.set_halign(Gtk.Align.START)
         inner.pack_start(lbl, False, False, 0)
 
         btn.add(inner)
-        btn.connect("clicked", self._select_filament, filament_type)
+        btn.connect("clicked", self._select_filament, slot_idx)
 
         return btn
 
