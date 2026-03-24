@@ -65,8 +65,12 @@ class Panel(ScreenPanel):
         self.content.add(self._overlay)
 
         # Single row of 4 lane buttons
+        geo = Gdk.Display.get_default().get_primary_monitor().get_geometry()
+        lane_row_w = int(geo.width * 4 / 5)
+
         lane_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        lane_row.set_hexpand(True)
+        lane_row.set_size_request(lane_row_w, -1)
+        lane_row.set_halign(Gtk.Align.CENTER)
         lane_row.set_vexpand(False)
         lane_row.set_homogeneous(True)
 
