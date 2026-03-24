@@ -67,7 +67,7 @@ class Panel(ScreenPanel):
         # Single row of 4 lane buttons
         lane_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         lane_row.set_hexpand(True)
-        lane_row.set_vexpand(True)
+        lane_row.set_vexpand(False)
 
         afc_slots = self._fetch_afc_slots()
 
@@ -139,7 +139,7 @@ class Panel(ScreenPanel):
         btn = Gtk.Button()
         btn.get_style_context().add_class("filament-button")
         btn.set_hexpand(True)
-        btn.set_vexpand(True)
+        btn.set_vexpand(False)
 
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         inner.set_halign(Gtk.Align.CENTER)
