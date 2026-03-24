@@ -149,14 +149,17 @@ class Panel(ScreenPanel):
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
+        inner.set_hexpand(True)
+        inner.set_vexpand(True)
 
         # --- Icon stack: spool (default) ↔ pencil (when selected) ---
         icon_stack = Gtk.Stack()
         icon_stack.set_transition_type(Gtk.StackTransitionType.NONE)
-        icon_stack.set_size_request(32, 32)
+        icon_stack.set_size_request(56, 56)
+        icon_stack.set_halign(Gtk.Align.CENTER)
 
         spool_area = Gtk.DrawingArea()
-        spool_area.set_size_request(32, 32)
+        spool_area.set_size_request(56, 56)
         self.slot_spool_colors[slot_idx] = list(SPOOL_COLORS.get(material, (0.5, 0.5, 0.5)))
         self.slot_spool_areas[slot_idx] = spool_area
         spool_area.connect(
@@ -167,11 +170,11 @@ class Panel(ScreenPanel):
 
         pencil_box = Gtk.Box()
         pencil_box.get_style_context().add_class("filament-pencil")
-        pencil_box.set_size_request(32, 32)
+        pencil_box.set_size_request(56, 56)
         pencil_box.set_halign(Gtk.Align.CENTER)
         pencil_box.set_valign(Gtk.Align.CENTER)
         try:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.pencil_svg_path, 20, 20)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(self.pencil_svg_path, 40, 40)
             pencil_img = Gtk.Image.new_from_pixbuf(pixbuf)
         except Exception:
             pencil_img = Gtk.Image.new_from_icon_name("document-edit", Gtk.IconSize.LARGE_TOOLBAR)
