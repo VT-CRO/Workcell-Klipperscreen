@@ -44,8 +44,8 @@ class Panel(ScreenPanel):
         self.slot_material_labels = {}  # slot_idx → Gtk.Label for the material text
         self.slot_spool_areas = {}      # slot_idx → Gtk.DrawingArea
         self.slot_spool_colors = {}     # slot_idx → [r, g, b] mutable for live updates
-        self._edit_popup_widget = None  # current overlay blocker, or None
-        self._edit_combo = None         # ComboBoxText inside the popup
+        self._edit_popup_widget = None   # current overlay blocker, or None
+        self._edit_selected_type = None  # mutable [type] list used by the open popup
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -250,18 +250,36 @@ class Panel(ScreenPanel):
         header.pack_end(close_btn, False, False, 0)
         popup.pack_start(header, False, False, 0)
 
-        # Filament type dropdown
+        # Filament type toggle buttons
         current = self.slot_materials.get(slot_idx, "")
-        self._edit_combo = Gtk.ComboBoxText()
-        self._edit_combo.get_style_context().add_class("filament-type-combo")
+        self._edit_selected_type = [current if current in FILAMENT_OPTIONS else FILAMENT_OPTIONS[0]]
+        type_btns = {}
+
+        type_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        type_box.set_hexpand(True)
+
+        def on_type_toggled(btn, ft):
+            if btn.get_active():
+                self._edit_selected_type[0] = ft
+                for other_ft, other_btn in type_btns.items():
+                    if other_ft != ft and other_btn.get_active():
+                        other_btn.handler_block_by_func(on_type_toggled)
+                        other_btn.set_active(False)
+                        other_btn.handler_unblock_by_func(on_type_toggled)
+
         for ft in FILAMENT_OPTIONS:
-            self._edit_combo.append_text(ft)
-        active_idx = FILAMENT_OPTIONS.index(current) if current in FILAMENT_OPTIONS else 0
-        self._edit_combo.set_active(active_idx)
-        popup.pack_start(self._edit_combo, False, False, 0)
+            tb = Gtk.ToggleButton(label=ft)
+            tb.get_style_context().add_class("filament-type-btn")
+            tb.set_hexpand(True)
+            tb.set_active(ft == self._edit_selected_type[0])
+            type_btns[ft] = tb
+            tb.connect("toggled", on_type_toggled, ft)
+            type_box.pack_start(tb, True, True, 0)
+
+        popup.pack_start(type_box, False, False, 0)
 
         # Confirm button
-        confirm_btn = Gtk.Button(label="✓  Confirm")
+        confirm_btn = Gtk.Button(label="Confirm")
         confirm_btn.get_style_context().add_class("filament-edit-confirm")
         confirm_btn.connect("clicked", lambda *_: self._confirm_filament_edit(slot_idx))
         popup.pack_end(confirm_btn, False, False, 0)
@@ -278,11 +296,11 @@ class Panel(ScreenPanel):
         if self._edit_popup_widget is not None:
             self._overlay.remove(self._edit_popup_widget)
             self._edit_popup_widget = None
-            self._edit_combo = None
+            self._edit_selected_type = None
 
     def _confirm_filament_edit(self, slot_idx):
         """Apply the chosen filament type to the slot, push to AFC, and close the popup."""
-        new_material = self._edit_combo.get_active_text() if self._edit_combo else None
+        new_material = self._edit_selected_type[0] if self._edit_selected_type else None
         if new_material:
             self.slot_materials[slot_idx] = new_material
             self.slot_has_filament[slot_idx] = True
