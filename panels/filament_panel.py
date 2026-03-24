@@ -87,7 +87,7 @@ class Panel(ScreenPanel):
             self.filament_buttons[slot_idx] = btn
             lane_row.pack_start(btn, True, True, 0)
 
-        main_box.pack_start(lane_row, False, False, 0)
+        main_box.pack_start(lane_row, True, False, 0)
 
         # Load / Unload buttons side by side
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -146,7 +146,7 @@ class Panel(ScreenPanel):
         btn.set_hexpand(True)
         btn.set_vexpand(False)
 
-        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
         inner.set_hexpand(True)
