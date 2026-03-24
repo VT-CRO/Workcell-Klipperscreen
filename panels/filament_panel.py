@@ -64,21 +64,14 @@ class Panel(ScreenPanel):
         self._overlay.add(main_box)
         self.content.add(self._overlay)
 
-        # 2x2 grid of filament buttons
-        grid = Gtk.Grid()
-        grid.set_row_spacing(12)
-        grid.set_column_spacing(12)
-        grid.set_halign(Gtk.Align.CENTER)
-        grid.set_valign(Gtk.Align.CENTER)
-        grid.set_vexpand(True)
-        grid.set_hexpand(True)
-        grid.set_row_homogeneous(True)
-        grid.set_column_homogeneous(True)
+        # Single row of 4 lane buttons
+        lane_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        lane_row.set_hexpand(True)
+        lane_row.set_vexpand(True)
 
         afc_slots = self._fetch_afc_slots()
-        positions = [(0, 0), (1, 0), (0, 1), (1, 1)]
 
-        for slot_idx, (col, row) in enumerate(positions):
+        for slot_idx in range(4):
             lane_name, material, has_filament = (
                 afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False)
             )
@@ -87,9 +80,9 @@ class Panel(ScreenPanel):
             self.slot_has_filament[slot_idx] = has_filament
             btn = self._create_filament_button(slot_idx, lane_name, material, has_filament)
             self.filament_buttons[slot_idx] = btn
-            grid.attach(btn, col, row, 1, 1)
+            lane_row.pack_start(btn, True, True, 0)
 
-        main_box.pack_start(grid, True, True, 0)
+        main_box.pack_start(lane_row, True, True, 0)
 
         # Load / Unload buttons side by side
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -148,7 +141,7 @@ class Panel(ScreenPanel):
         btn.set_hexpand(True)
         btn.set_vexpand(True)
 
-        inner = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         inner.set_halign(Gtk.Align.CENTER)
         inner.set_valign(Gtk.Align.CENTER)
 
@@ -187,7 +180,7 @@ class Panel(ScreenPanel):
         # --- Material label ---
         display = material if material else ("N/A" if has_filament else "Empty")
         lbl = Gtk.Label(label=display)
-        lbl.set_halign(Gtk.Align.START)
+        lbl.set_halign(Gtk.Align.CENTER)
         self.slot_material_labels[slot_idx] = lbl
         inner.pack_start(lbl, False, False, 0)
 
