@@ -326,33 +326,21 @@
     color: white;
 }
 
-.filament-type-btn {
-    background-color: #3A3D45;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    color: white;
-    font-size: 1.2em;
-    font-weight: bold;
-}
-
-.filament-type-btn:checked {
-    background-color: #3A4D55;
-    border: 2px solid #4FC3F7;
-    color: #4FC3F7;
-}
 
 .filament-edit-confirm {
-    background-color: #4FC3F7;
-    border-radius: 10px;
+    background-color: #3A3D45;
+    border-radius: 14px;
     border: 0;
-    color: #1A1D25;
-    font-size: 1.5em;
-    font-weight: bold;
-    min-height: 52px;
+    color: #CCCCCC;
+    font-size: 1.15em;
+    font-weight: 500;
+    min-height: 56px;
+    padding: 8px 24px;
+    margin: 8px 20px;
 }
 
 .filament-edit-confirm:active {
-    background-color: #29ABE2;
+    background-color: #555860;
 }
 
 /* --- Progress Bar (Job Status) --- */
