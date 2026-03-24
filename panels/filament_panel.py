@@ -91,16 +91,27 @@ class Panel(ScreenPanel):
 
         main_box.pack_start(grid, True, True, 0)
 
-        # Unload Filament button
-        unload_btn = Gtk.Button()
-        unload_btn.get_style_context().add_class("filament-unload")
-        unload_lbl = Gtk.Label(label="Unload Filament")
-        unload_btn.add(unload_lbl)
-        unload_btn.set_hexpand(True)
-        unload_btn.connect("clicked", self._unload_filament)
-        if not self.has_unload:
-            unload_btn.set_sensitive(False)
-        main_box.pack_end(unload_btn, False, False, 0)
+        # Load / Unload buttons side by side
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        action_box.set_hexpand(True)
+
+        self._load_btn = Gtk.Button()
+        self._load_btn.get_style_context().add_class("filament-unload")
+        self._load_btn.add(Gtk.Label(label="Load Filament"))
+        self._load_btn.set_hexpand(True)
+        self._load_btn.set_sensitive(False)
+        self._load_btn.connect("clicked", self._load_filament)
+        action_box.pack_start(self._load_btn, True, True, 0)
+
+        self._unload_btn = Gtk.Button()
+        self._unload_btn.get_style_context().add_class("filament-unload")
+        self._unload_btn.add(Gtk.Label(label="Unload Filament"))
+        self._unload_btn.set_hexpand(True)
+        self._unload_btn.set_sensitive(False)
+        self._unload_btn.connect("clicked", self._unload_filament)
+        action_box.pack_start(self._unload_btn, True, True, 0)
+
+        main_box.pack_end(action_box, False, False, 0)
 
     # ------------------------------------------------------------------ #
     #  Data                                                                #
@@ -345,25 +356,28 @@ class Panel(ScreenPanel):
         widget.get_style_context().add_class("filament-selected")
         self.selected_filament = slot_idx
 
-        if self.slot_materials.get(slot_idx) or self.slot_has_filament.get(slot_idx):
+        non_empty = bool(self.slot_materials.get(slot_idx) or self.slot_has_filament.get(slot_idx))
+        if non_empty:
             stack = self.slot_icon_stacks.get(slot_idx)
             if stack:
                 stack.set_visible_child_name("pencil")
+
+        self._load_btn.set_sensitive(non_empty)
+        self._unload_btn.set_sensitive(non_empty)
 
     # ------------------------------------------------------------------ #
     #  Unload                                                              #
     # ------------------------------------------------------------------ #
 
-    def _unload_filament(self, widget):
-        """Run the UNLOAD_FILAMENT macro."""
-        if self.has_unload:
-            self._screen._send_action(
-                widget, "printer.gcode.script",
-                {"script": "UNLOAD_FILAMENT"}
-            )
-            logging.info("Unload filament command sent")
-        else:
-            self._screen.show_popup_message("UNLOAD_FILAMENT macro not found")
+    def _load_filament(self, _widget):
+        """Load the selected lane via AFC CHANGE_TOOL."""
+        lane_name = self.slot_lane_names.get(self.selected_filament)
+        if lane_name:
+            self.afc_change_tool(lane_name)
+
+    def _unload_filament(self, _widget):
+        """Unload the active filament via AFC TOOL_UNLOAD."""
+        self.afc_tool_unload()
 
     # ------------------------------------------------------------------ #
     #  AFC integration                                                     #
