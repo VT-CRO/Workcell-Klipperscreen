@@ -87,8 +87,12 @@ class Panel(ScreenPanel):
         main_box.set_margin_end(30)
         main_box.set_margin_bottom(12)
 
+        bg = Gtk.EventBox()
+        bg.add(main_box)
+        bg.connect("button-press-event", lambda *_: self._deselect_all())
+
         self._overlay = Gtk.Overlay()
-        self._overlay.add(main_box)
+        self._overlay.add(bg)
         self.content.add(self._overlay)
 
         # Single row of 4 lane buttons
@@ -419,6 +423,19 @@ class Panel(ScreenPanel):
     # ------------------------------------------------------------------ #
     #  Selection / temperatures                                            #
     # ------------------------------------------------------------------ #
+
+    def _deselect_all(self):
+        """Clear any selected lane."""
+        if self.selected_filament is None:
+            return
+        for idx, btn in self.filament_buttons.items():
+            btn.get_style_context().remove_class("filament-selected")
+            stack = self.slot_icon_stacks.get(idx)
+            if stack:
+                stack.set_visible_child_name("spool")
+        self.selected_filament = None
+        self._load_btn.set_sensitive(False)
+        self._unload_btn.set_sensitive(False)
 
     def _select_filament(self, widget, slot_idx):
         """Select a filament slot. If already selected and non-empty, open the edit popup."""
