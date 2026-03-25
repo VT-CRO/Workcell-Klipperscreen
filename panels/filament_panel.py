@@ -27,9 +27,16 @@ FILAMENT_OPTIONS = ['PLA', 'PETG', 'ABS']
 
 # (label, hex_color, css_class)
 COLOR_OPTIONS = [
-    ('Red',   '#FF0000', 'filament-color-red'),
-    ('Green', '#00FF00', 'filament-color-green'),
-    ('Blue',  '#0000FF', 'filament-color-blue'),
+    ('Red',    '#FF0000', 'filament-color-red'),
+    ('Orange', '#FF7F00', 'filament-color-orange'),
+    ('Yellow', '#FFFF00', 'filament-color-yellow'),
+    ('Green',  '#00CC00', 'filament-color-green'),
+    ('Blue',   '#0000FF', 'filament-color-blue'),
+    ('Purple', '#800080', 'filament-color-purple'),
+    ('Pink',   '#FF69B4', 'filament-color-pink'),
+    ('Grey',   '#808080', 'filament-color-grey'),
+    ('Black',  '#111111', 'filament-color-black'),
+    ('White',  '#FFFFFF', 'filament-color-white'),
 ]
 
 
@@ -268,7 +275,7 @@ class Panel(ScreenPanel):
         blocker.get_style_context().add_class("filament-edit-overlay")
 
         # Centered popup card
-        popup = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        popup = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=36)
         popup.get_style_context().add_class("filament-edit-popup")
         popup.set_halign(Gtk.Align.CENTER)
         popup.set_valign(Gtk.Align.CENTER)
@@ -322,8 +329,14 @@ class Panel(ScreenPanel):
         self._edit_selected_color = [default_color]
         color_btns = {}
 
-        color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        color_box.set_hexpand(True)
+        # Compute square button size to fit all colors in a row
+        popup_padding = 48  # 24px each side from popup CSS
+        btn_gap = 6
+        n_colors = len(COLOR_OPTIONS)
+        btn_size = max(36, (popup_w - popup_padding - (n_colors - 1) * btn_gap) // n_colors)
+
+        color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=btn_gap)
+        color_box.set_halign(Gtk.Align.CENTER)
 
         def on_color_toggled(btn, hex_):
             if btn.get_active():
@@ -334,15 +347,15 @@ class Panel(ScreenPanel):
                         other_btn.set_active(False)
                         other_btn.handler_unblock_by_func(on_color_toggled)
 
-        for label, hex_, css_class in COLOR_OPTIONS:
-            cb = Gtk.ToggleButton(label=label)
+        for _, hex_, css_class in COLOR_OPTIONS:
+            cb = Gtk.ToggleButton()
+            cb.set_size_request(btn_size, btn_size)
             cb.get_style_context().add_class("filament-color-btn")
             cb.get_style_context().add_class(css_class)
-            cb.set_hexpand(True)
             cb.set_active(hex_ == self._edit_selected_color[0])
             color_btns[hex_] = cb
             cb.connect("toggled", on_color_toggled, hex_)
-            color_box.pack_start(cb, True, True, 0)
+            color_box.pack_start(cb, False, False, 0)
 
         popup.pack_start(color_box, False, False, 0)
 
