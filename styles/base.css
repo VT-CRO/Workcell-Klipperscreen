@@ -342,6 +342,23 @@
     color: #4FC3F7;
 }
 
+.filament-color-btn {
+    background-color: #3A3D45;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.filament-color-red  { border-color: #FF0000; }
+.filament-color-green { border-color: #00FF00; }
+.filament-color-blue  { border-color: #0000FF; }
+
+.filament-color-red:checked   { background-color: #FF0000; color: #111; }
+.filament-color-green:checked { background-color: #00FF00; color: #111; }
+.filament-color-blue:checked  { background-color: #0000FF; color: white; }
+
 .filament-edit-confirm {
     background-color: #3A3D45;
     border-radius: 14px;

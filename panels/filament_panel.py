@@ -25,6 +25,24 @@ SPOOL_COLORS = {
 
 FILAMENT_OPTIONS = ['PLA', 'PETG', 'ABS']
 
+# (label, hex_color, css_class)
+COLOR_OPTIONS = [
+    ('Red',   '#FF0000', 'filament-color-red'),
+    ('Green', '#00FF00', 'filament-color-green'),
+    ('Blue',  '#0000FF', 'filament-color-blue'),
+]
+
+
+def _hex_to_rgb(hex_str):
+    """Convert '#RRGGBB' to (r, g, b) floats in [0, 1]."""
+    h = (hex_str or '').lstrip('#')
+    if len(h) == 6:
+        try:
+            return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
+        except ValueError:
+            pass
+    return (0.5, 0.5, 0.5)
+
 
 class Panel(ScreenPanel):
     def __init__(self, screen, title):
@@ -44,8 +62,10 @@ class Panel(ScreenPanel):
         self.slot_material_labels = {}  # slot_idx → Gtk.Label for the material text
         self.slot_spool_areas = {}      # slot_idx → Gtk.DrawingArea
         self.slot_spool_colors = {}     # slot_idx → [r, g, b] mutable for live updates
+        self.slot_colors = {}           # slot_idx → hex string e.g. "#FF0000"
         self._edit_popup_widget = None   # current overlay blocker, or None
         self._edit_selected_type = None  # mutable [type] list used by the open popup
+        self._edit_selected_color = None # mutable [hex] list used by the open popup
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -77,13 +97,14 @@ class Panel(ScreenPanel):
         afc_slots = self._fetch_afc_slots()
 
         for slot_idx in range(4):
-            lane_name, material, has_filament = (
-                afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False)
+            lane_name, material, has_filament, color = (
+                afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False, "")
             )
             self.slot_lane_names[slot_idx] = lane_name
             self.slot_materials[slot_idx] = material
             self.slot_has_filament[slot_idx] = has_filament
-            btn = self._create_filament_button(slot_idx, lane_name, material, has_filament)
+            self.slot_colors[slot_idx] = color
+            btn = self._create_filament_button(slot_idx, lane_name, material, has_filament, color)
             self.filament_buttons[slot_idx] = btn
             lane_row.pack_start(btn, True, True, 0)
 
@@ -129,7 +150,8 @@ class Panel(ScreenPanel):
                         continue
                     material = (lane_data.get("material") or "").strip().upper()
                     has_filament = bool(lane_data.get("load") or lane_data.get("prep"))
-                    lanes.append((lane_name, material, has_filament))
+                    color = (lane_data.get("color") or "").strip()
+                    lanes.append((lane_name, material, has_filament, color))
             return lanes[:4]
         except Exception as e:
             logging.warning(f"Could not fetch AFC status: {e}")
@@ -139,7 +161,7 @@ class Panel(ScreenPanel):
     #  Button construction                                                 #
     # ------------------------------------------------------------------ #
 
-    def _create_filament_button(self, slot_idx, lane_name, material, has_filament=False):
+    def _create_filament_button(self, slot_idx, lane_name, material, has_filament=False, color=""):
         """Create a filament slot button showing the AFC lane material."""
         btn = Gtk.Button()
         btn.get_style_context().add_class("filament-button")
@@ -160,7 +182,8 @@ class Panel(ScreenPanel):
 
         spool_area = Gtk.DrawingArea()
         spool_area.set_size_request(56, 56)
-        self.slot_spool_colors[slot_idx] = list(SPOOL_COLORS.get(material, (0.5, 0.5, 0.5)))
+        rgb = _hex_to_rgb(color) if color else SPOOL_COLORS.get(material, (0.5, 0.5, 0.5))
+        self.slot_spool_colors[slot_idx] = list(rgb)
         self.slot_spool_areas[slot_idx] = spool_area
         spool_area.connect(
             "draw",
@@ -290,6 +313,39 @@ class Panel(ScreenPanel):
 
         popup.pack_start(type_box, False, False, 0)
 
+        # Color toggle buttons
+        current_color = self.slot_colors.get(slot_idx, "")
+        default_color = next(
+            (hex_ for _, hex_, _ in COLOR_OPTIONS if hex_ == current_color.upper()),
+            COLOR_OPTIONS[0][1]
+        )
+        self._edit_selected_color = [default_color]
+        color_btns = {}
+
+        color_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        color_box.set_hexpand(True)
+
+        def on_color_toggled(btn, hex_):
+            if btn.get_active():
+                self._edit_selected_color[0] = hex_
+                for other_hex, other_btn in color_btns.items():
+                    if other_hex != hex_ and other_btn.get_active():
+                        other_btn.handler_block_by_func(on_color_toggled)
+                        other_btn.set_active(False)
+                        other_btn.handler_unblock_by_func(on_color_toggled)
+
+        for label, hex_, css_class in COLOR_OPTIONS:
+            cb = Gtk.ToggleButton(label=label)
+            cb.get_style_context().add_class("filament-color-btn")
+            cb.get_style_context().add_class(css_class)
+            cb.set_hexpand(True)
+            cb.set_active(hex_ == self._edit_selected_color[0])
+            color_btns[hex_] = cb
+            cb.connect("toggled", on_color_toggled, hex_)
+            color_box.pack_start(cb, True, True, 0)
+
+        popup.pack_start(color_box, False, False, 0)
+
         # Confirm button
         confirm_btn = Gtk.Button(label="Confirm")
         confirm_btn.get_style_context().add_class("filament-edit-confirm")
@@ -321,7 +377,12 @@ class Panel(ScreenPanel):
             if lbl:
                 lbl.set_text(new_material)
 
-            self.slot_spool_colors[slot_idx] = list(SPOOL_COLORS.get(new_material, (0.5, 0.5, 0.5)))
+            new_color = self._edit_selected_color[0] if self._edit_selected_color else ""
+            if new_color:
+                self.slot_colors[slot_idx] = new_color
+                self.slot_spool_colors[slot_idx] = list(_hex_to_rgb(new_color))
+            else:
+                self.slot_spool_colors[slot_idx] = list(SPOOL_COLORS.get(new_material, (0.5, 0.5, 0.5)))
             spool_area = self.slot_spool_areas.get(slot_idx)
             if spool_area:
                 spool_area.queue_draw()
@@ -333,6 +394,12 @@ class Panel(ScreenPanel):
                     f"SET_MATERIAL LANE={lane_name} MATERIAL={new_material}"
                 )
                 logging.info(f"AFC: SET_MATERIAL LANE={lane_name} MATERIAL={new_material}")
+                if new_color:
+                    hex_no_hash = new_color.lstrip('#')
+                    self._screen._ws.klippy.gcode_script(
+                        f"SET_COLOR LANE={lane_name} COLOR={hex_no_hash}"
+                    )
+                    logging.info(f"AFC: SET_COLOR LANE={lane_name} COLOR={hex_no_hash}")
 
         self._close_edit_popup()
 
