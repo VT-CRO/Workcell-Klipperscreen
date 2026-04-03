@@ -13,7 +13,6 @@ from ks_includes.screen_panel import ScreenPanel
 class Panel(ScreenPanel):
     distances = ["1", "10", "50"]
     distance = "10"
-    temp_increment = 5
 
     def __init__(self, screen, title):
         title = title or _("Move")
@@ -171,7 +170,7 @@ class Panel(ScreenPanel):
         minus_btn = Gtk.Button(label="-")
         minus_btn.get_style_context().add_class("temp-adjust-btn")
         minus_btn.set_size_request(64, 72)
-        minus_btn.connect("clicked", self._adjust_temp, device, -self.temp_increment)
+        minus_btn.connect("clicked", self._adjust_temp, device, -1)
         group.pack_start(minus_btn, False, False, 0)
 
         # Middle section: thermometer icon + label/temp (centered)
@@ -212,7 +211,7 @@ class Panel(ScreenPanel):
         plus_btn = Gtk.Button(label="+")
         plus_btn.get_style_context().add_class("temp-adjust-btn")
         plus_btn.set_size_request(64, 72)
-        plus_btn.connect("clicked", self._adjust_temp, device, self.temp_increment)
+        plus_btn.connect("clicked", self._adjust_temp, device, +1)
         group.pack_end(plus_btn, False, False, 0)
 
         # Store temp label for updates
@@ -220,8 +219,9 @@ class Panel(ScreenPanel):
 
         return group
 
-    def _adjust_temp(self, widget, device, increment):
-        """Adjust temperature by increment."""
+    def _adjust_temp(self, widget, device, sign):
+        """Adjust temperature by the current jog distance amount."""
+        increment = sign * int(self.distance)
         current_target = self._printer.get_stat(device, "target") or 0
         if current_target == 0 and increment > 0:
             new_target = 10
