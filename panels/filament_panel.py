@@ -70,9 +70,11 @@ class Panel(ScreenPanel):
         self.slot_spool_areas = {}      # slot_idx → Gtk.DrawingArea
         self.slot_spool_colors = {}     # slot_idx → [r, g, b] mutable for live updates
         self.slot_colors = {}           # slot_idx → hex string e.g. "#FF0000"
-        self._edit_popup_widget = None   # current overlay blocker, or None
-        self._edit_selected_type = None  # mutable [type] list used by the open popup
-        self._edit_selected_color = None # mutable [hex] list used by the open popup
+        self._edit_popup_widget = None    # current overlay blocker, or None
+        self._edit_selected_type = None   # mutable [type] list used by the open popup
+        self._edit_selected_color = None  # mutable [hex] list used by the open popup
+        self._op_popup_widget = None      # blocking operation-in-progress popup
+        self._op_seen_busy = False        # True once printer went non-Idle after op started
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -471,11 +473,63 @@ class Panel(ScreenPanel):
         """Load the selected lane via AFC CHANGE_TOOL."""
         lane_name = self.slot_lane_names.get(self.selected_filament)
         if lane_name:
+            self._show_op_popup("Loading Filament...")
             self.afc_change_tool(lane_name)
 
     def _unload_filament(self, _widget):
         """Unload the active filament via AFC TOOL_UNLOAD."""
+        self._show_op_popup("Unloading Filament...")
         self.afc_tool_unload()
+
+    def _show_op_popup(self, message):
+        """Show a non-dismissible operation-in-progress overlay."""
+        if self._op_popup_widget is not None:
+            return
+        self._op_seen_busy = False
+
+        blocker = Gtk.EventBox()
+        blocker.set_hexpand(True)
+        blocker.set_vexpand(True)
+        blocker.get_style_context().add_class("filament-edit-overlay")
+        # Intentionally no click handler — cannot be dismissed manually
+
+        popup = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        popup.get_style_context().add_class("filament-edit-popup")
+        popup.set_halign(Gtk.Align.CENTER)
+        popup.set_valign(Gtk.Align.CENTER)
+
+        lbl = Gtk.Label(label=message)
+        lbl.get_style_context().add_class("filament-op-label")
+        popup.pack_start(lbl, False, False, 0)
+
+        spinner = Gtk.Spinner()
+        spinner.set_size_request(48, 48)
+        spinner.start()
+        popup.pack_start(spinner, False, False, 0)
+
+        blocker.add(popup)
+        blocker.show_all()
+
+        self._op_popup_widget = blocker
+        self._overlay.add_overlay(blocker)
+        self._overlay.set_overlay_pass_through(blocker, False)
+
+    def _close_op_popup(self):
+        if self._op_popup_widget is not None:
+            self._overlay.remove(self._op_popup_widget)
+            self._op_popup_widget = None
+            self._op_seen_busy = False
+
+    def process_update(self, action, data):
+        if action != "notify_status_update" or self._op_popup_widget is None:
+            return
+        idle_state = data.get("idle_timeout", {}).get("state", "")
+        if not idle_state:
+            return
+        if idle_state != "Idle":
+            self._op_seen_busy = True
+        elif self._op_seen_busy:
+            self._close_op_popup()
 
     # ------------------------------------------------------------------ #
     #  AFC integration                                                     #
