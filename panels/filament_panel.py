@@ -52,6 +52,12 @@ def _hex_to_rgb(hex_str):
 
 
 class Panel(ScreenPanel):
+    # Class-level op state — survives panel re-instantiation on navigation
+    _op_active   = False
+    _op_message  = ""
+    _op_seen_busy = False
+    _op_poll_source = None  # GLib source ID so we can cancel the old timer
+
     def __init__(self, screen, title):
         super().__init__(screen, title)
         self.content.get_style_context().add_class("customBG")
@@ -73,8 +79,7 @@ class Panel(ScreenPanel):
         self._edit_popup_widget = None    # current overlay blocker, or None
         self._edit_selected_type = None   # mutable [type] list used by the open popup
         self._edit_selected_color = None  # mutable [hex] list used by the open popup
-        self._op_popup_widget = None      # blocking operation-in-progress popup
-        self._op_seen_busy = False        # True once printer went non-Idle after op started
+        self._op_popup_widget = None      # blocking operation-in-progress popup (instance ref)
 
         # Check if UNLOAD_FILAMENT macro exists
         macros = self._printer.get_config_section_list("gcode_macro ")
@@ -144,6 +149,10 @@ class Panel(ScreenPanel):
         action_box.pack_start(self._unload_btn, True, True, 0)
 
         main_box.pack_end(action_box, False, False, 0)
+
+        # Re-attach blocking popup if an operation was running when we navigated away
+        if Panel._op_active:
+            self._show_op_popup(Panel._op_message)
 
     # ------------------------------------------------------------------ #
     #  Data                                                                #
@@ -485,7 +494,13 @@ class Panel(ScreenPanel):
         """Show a non-dismissible operation-in-progress overlay."""
         if self._op_popup_widget is not None:
             return
-        self._op_seen_busy = False
+        # Cancel any poll timer left over from a previous instance
+        if Panel._op_poll_source is not None:
+            GLib.source_remove(Panel._op_poll_source)
+            Panel._op_poll_source = None
+        Panel._op_active = True
+        Panel._op_message = message
+        Panel._op_seen_busy = False
 
         blocker = Gtk.EventBox()
         blocker.set_hexpand(True)
@@ -514,25 +529,29 @@ class Panel(ScreenPanel):
         self._overlay.add_overlay(blocker)
         self._overlay.set_overlay_pass_through(blocker, False)
 
-        GLib.timeout_add(500, self._poll_op_complete)
+        Panel._op_poll_source = GLib.timeout_add(500, self._poll_op_complete)
 
     def _poll_op_complete(self):
-        if self._op_popup_widget is None:
-            return False  # already closed, stop polling
+        if not Panel._op_active:
+            Panel._op_poll_source = None
+            return False
         idle_state = self._printer.get_stat("idle_timeout", "state") or ""
         logging.info(f"[FilamentPanel] op poll: idle_timeout.state={idle_state!r}")
         if idle_state == "Printing":
-            self._op_seen_busy = True
-        elif self._op_seen_busy and idle_state in ("Ready", "Idle"):
+            Panel._op_seen_busy = True
+        elif Panel._op_seen_busy and idle_state in ("Ready", "Idle"):
             self._close_op_popup()
+            Panel._op_poll_source = None
             return False
-        return True  # keep polling
+        return True
 
     def _close_op_popup(self):
+        Panel._op_active = False
+        Panel._op_message = ""
+        Panel._op_seen_busy = False
         if self._op_popup_widget is not None:
             self._overlay.remove(self._op_popup_widget)
             self._op_popup_widget = None
-            self._op_seen_busy = False
 
     # ------------------------------------------------------------------ #
     #  AFC integration                                                     #
