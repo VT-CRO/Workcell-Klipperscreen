@@ -519,10 +519,11 @@ class Panel(ScreenPanel):
     def _poll_op_complete(self):
         if self._op_popup_widget is None:
             return False  # already closed, stop polling
-        idle_state = self._printer.get_stat("idle_timeout", "state")
-        if idle_state != "Idle":
+        idle_state = self._printer.get_stat("idle_timeout", "state") or ""
+        logging.info(f"[FilamentPanel] op poll: idle_timeout.state={idle_state!r}")
+        if idle_state == "Printing":
             self._op_seen_busy = True
-        elif self._op_seen_busy:
+        elif self._op_seen_busy and idle_state in ("Ready", "Idle"):
             self._close_op_popup()
             return False
         return True  # keep polling
