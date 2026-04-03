@@ -5,7 +5,7 @@ import pathlib
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 from ks_includes.screen_panel import ScreenPanel
 
 
@@ -514,22 +514,24 @@ class Panel(ScreenPanel):
         self._overlay.add_overlay(blocker)
         self._overlay.set_overlay_pass_through(blocker, False)
 
+        GLib.timeout_add(500, self._poll_op_complete)
+
+    def _poll_op_complete(self):
+        if self._op_popup_widget is None:
+            return False  # already closed, stop polling
+        idle_state = self._printer.get_stat("idle_timeout", "state")
+        if idle_state != "Idle":
+            self._op_seen_busy = True
+        elif self._op_seen_busy:
+            self._close_op_popup()
+            return False
+        return True  # keep polling
+
     def _close_op_popup(self):
         if self._op_popup_widget is not None:
             self._overlay.remove(self._op_popup_widget)
             self._op_popup_widget = None
             self._op_seen_busy = False
-
-    def process_update(self, action, data):
-        if action != "notify_status_update" or self._op_popup_widget is None:
-            return
-        idle_state = data.get("idle_timeout", {}).get("state", "")
-        if not idle_state:
-            return
-        if idle_state != "Idle":
-            self._op_seen_busy = True
-        elif self._op_seen_busy:
-            self._close_op_popup()
 
     # ------------------------------------------------------------------ #
     #  AFC integration                                                     #
