@@ -76,6 +76,7 @@ class Panel(ScreenPanel):
         self.slot_spool_areas = {}      # slot_idx → Gtk.DrawingArea
         self.slot_spool_colors = {}     # slot_idx → [r, g, b] mutable for live updates
         self.slot_colors = {}           # slot_idx → hex string e.g. "#FF0000"
+        self.slot_tool_loaded = {}      # slot_idx → bool (currently in extruder)
         self._edit_popup_widget = None    # current overlay blocker, or None
         self._edit_selected_type = None   # mutable [type] list used by the open popup
         self._edit_selected_color = None  # mutable [hex] list used by the open popup
@@ -115,13 +116,14 @@ class Panel(ScreenPanel):
         afc_slots = self._fetch_afc_slots()
 
         for slot_idx in range(4):
-            lane_name, material, has_filament, color = (
-                afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False, "")
+            lane_name, material, has_filament, color, tool_loaded = (
+                afc_slots[slot_idx] if slot_idx < len(afc_slots) else (None, "", False, "", False)
             )
             self.slot_lane_names[slot_idx] = lane_name
             self.slot_materials[slot_idx] = material
             self.slot_has_filament[slot_idx] = has_filament
             self.slot_colors[slot_idx] = color
+            self.slot_tool_loaded[slot_idx] = tool_loaded
             btn = self._create_filament_button(slot_idx, lane_name, material, has_filament, color)
             self.filament_buttons[slot_idx] = btn
             lane_row.pack_start(btn, True, True, 0)
@@ -148,6 +150,9 @@ class Panel(ScreenPanel):
         self._unload_btn.connect("clicked", self._unload_filament)
         action_box.pack_start(self._unload_btn, True, True, 0)
 
+        any_loaded = any(self.slot_tool_loaded.values())
+        self._unload_btn.set_visible(any_loaded)
+
         main_box.pack_end(action_box, False, False, 0)
 
         # Re-attach blocking popup if an operation was running when we navigated away
@@ -173,7 +178,8 @@ class Panel(ScreenPanel):
                     material = (lane_data.get("material") or "").strip().upper()
                     has_filament = bool(lane_data.get("load") or lane_data.get("prep"))
                     color = (lane_data.get("color") or "").strip()
-                    lanes.append((lane_name, material, has_filament, color))
+                    tool_loaded = bool(lane_data.get("tool_loaded", False))
+                    lanes.append((lane_name, material, has_filament, color, tool_loaded))
             return lanes[:4]
         except Exception as e:
             logging.warning(f"Could not fetch AFC status: {e}")
@@ -446,7 +452,9 @@ class Panel(ScreenPanel):
                 stack.set_visible_child_name("spool")
         self.selected_filament = None
         self._load_btn.set_sensitive(False)
-        self._unload_btn.set_sensitive(False)
+        any_loaded = any(self.slot_tool_loaded.values())
+        self._unload_btn.set_visible(any_loaded)
+        self._unload_btn.set_sensitive(any_loaded)
 
     def _select_filament(self, widget, slot_idx):
         """Select a filament slot. If already selected and non-empty, open the edit popup."""
@@ -471,8 +479,12 @@ class Panel(ScreenPanel):
             if stack:
                 stack.set_visible_child_name("pencil")
 
-        self._load_btn.set_sensitive(non_empty)
-        self._unload_btn.set_sensitive(non_empty)
+        already_loaded = self.slot_tool_loaded.get(slot_idx, False)
+        self._load_btn.set_sensitive(non_empty and not already_loaded)
+
+        any_loaded = any(self.slot_tool_loaded.values())
+        self._unload_btn.set_visible(any_loaded)
+        self._unload_btn.set_sensitive(any_loaded)
 
     # ------------------------------------------------------------------ #
     #  Unload                                                              #
