@@ -744,9 +744,11 @@ class KlipperScreen(Gtk.Window):
         self.show_panel("job_status", remove_all=True)
 
     def state_ready(self, wait=True):
-        # Do not return to main menu if completing a job, timeouts/user input will return
         if "job_status" in self._cur_panels and wait:
-            return
+            # Only block navigation while the print is actively running or paused
+            ps = self._printer.get_stat("print_stats", "state")
+            if ps in ("printing", "paused"):
+                return
         if not self.initialized:
             logging.debug("Printer not initialized yet")
             self.printer.state = "not ready"
