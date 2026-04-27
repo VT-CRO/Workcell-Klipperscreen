@@ -746,7 +746,7 @@ class KlipperScreen(Gtk.Window):
     def state_ready(self, wait=True):
         if "job_status" in self._cur_panels and wait:
             # Only block navigation while the print is actively running or paused
-            ps = self._printer.get_stat("print_stats", "state")
+            ps = self.printer.get_stat("print_stats", "state")
             if ps in ("printing", "paused"):
                 return
         if not self.initialized:
