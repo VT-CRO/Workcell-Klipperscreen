@@ -22,7 +22,7 @@ class Panel(ScreenPanel):
  
         # Print Queue section
         queue_title = Gtk.Label(label="Print Queue")
-        queue_title.get_style_context().add_class("queue-button")
+        queue_title.get_style_context().add_class("queue-title")
         main_box.pack_start(queue_title, False, False, 0)
 
         toggle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -30,11 +30,13 @@ class Panel(ScreenPanel):
 
         self.enable_btn = Gtk.Button(label="Enable")
         self.enable_btn.get_style_context().add_class("jog-distance")
+        self.enable_btn.set_size_request(144, 72)
         self.enable_btn.connect("clicked", self._on_queue_toggle, True)
 
         self.disable_btn = Gtk.Button(label="Disable")
         self.disable_btn.get_style_context().add_class("jog-distance")
         self.disable_btn.get_style_context().add_class("jog-distance-active")
+        self.disable_btn.set_size_request(144, 72)
         self.disable_btn.connect("clicked", self._on_queue_toggle, False)
 
         toggle_box.pack_start(self.enable_btn, False, False, 0)

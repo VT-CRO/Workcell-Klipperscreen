@@ -223,6 +223,13 @@
     background-color: #555860;
 }
 
+/* --- Queue Section Title --- */
+.queue-title {
+    color: white;
+    font-size: 1.3em;
+    font-weight: 500;
+}
+
 /* --- Queue Buttons --- */
 .queue-button {
     background-color: #3A3D45;
