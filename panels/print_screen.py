@@ -25,19 +25,21 @@ class Panel(ScreenPanel):
         queue_title.get_style_context().add_class("queue-button")
         main_box.pack_start(queue_title, False, False, 0)
 
-        switch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        switch_box.set_halign(Gtk.Align.CENTER)
+        toggle_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        toggle_box.set_halign(Gtk.Align.CENTER)
 
-        enable_lbl = Gtk.Label(label="Enable")
-        self.queue_switch = Gtk.Switch()
-        self.queue_switch.set_active(False)
-        self.queue_switch.connect("notify::active", self._on_queue_switch)
-        disable_lbl = Gtk.Label(label="Disable")
+        self.enable_btn = Gtk.Button(label="Enable")
+        self.enable_btn.get_style_context().add_class("jog-distance")
+        self.enable_btn.connect("clicked", self._on_queue_toggle, True)
 
-        switch_box.pack_start(enable_lbl, False, False, 0)
-        switch_box.pack_start(self.queue_switch, False, False, 0)
-        switch_box.pack_start(disable_lbl, False, False, 0)
-        main_box.pack_start(switch_box, False, False, 0)
+        self.disable_btn = Gtk.Button(label="Disable")
+        self.disable_btn.get_style_context().add_class("jog-distance")
+        self.disable_btn.get_style_context().add_class("jog-distance-active")
+        self.disable_btn.connect("clicked", self._on_queue_toggle, False)
+
+        toggle_box.pack_start(self.enable_btn, False, False, 0)
+        toggle_box.pack_start(self.disable_btn, False, False, 0)
+        main_box.pack_start(toggle_box, False, False, 0)
 
         # Manual Print button
         manual_btn = Gtk.Button()
@@ -47,12 +49,16 @@ class Panel(ScreenPanel):
         manual_btn.connect("clicked", self._manual_print)
         main_box.pack_start(manual_btn, False, False, 0)
 
-    def _on_queue_switch(self, switch, _param):
-        if switch.get_active():
+    def _on_queue_toggle(self, widget, enabled):
+        if enabled:
+            self.enable_btn.get_style_context().add_class("jog-distance-active")
+            self.disable_btn.get_style_context().remove_class("jog-distance-active")
             script = 'SET_DISPLAY_TEXT MSG="Ready"'
         else:
+            self.disable_btn.get_style_context().add_class("jog-distance-active")
+            self.enable_btn.get_style_context().remove_class("jog-distance-active")
             script = 'SET_DISPLAY_TEXT MSG="Nope"'
-        self._screen._send_action(switch, "printer.gcode.script", {"script": script})
+        self._screen._send_action(widget, "printer.gcode.script", {"script": script})
 
     def _manual_print(self, widget):
         """Open the file browser for manual print selection."""
