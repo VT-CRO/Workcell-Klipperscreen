@@ -8,6 +8,8 @@ from ks_includes.screen_panel import ScreenPanel
 
 
 class Panel(ScreenPanel):
+    _queue_enabled = False
+
     def __init__(self, screen, title):
         super().__init__(screen, title)
         self.content.get_style_context().add_class("customBG")
@@ -35,9 +37,13 @@ class Panel(ScreenPanel):
 
         self.disable_btn = Gtk.Button(label="Disable")
         self.disable_btn.get_style_context().add_class("jog-distance")
-        self.disable_btn.get_style_context().add_class("jog-distance-active")
         self.disable_btn.set_size_request(144, 72)
         self.disable_btn.connect("clicked", self._on_queue_toggle, False)
+
+        if Panel._queue_enabled:
+            self.enable_btn.get_style_context().add_class("jog-distance-active")
+        else:
+            self.disable_btn.get_style_context().add_class("jog-distance-active")
 
         toggle_box.pack_start(self.enable_btn, False, False, 0)
         toggle_box.pack_start(self.disable_btn, False, False, 0)
@@ -52,6 +58,7 @@ class Panel(ScreenPanel):
         main_box.pack_start(manual_btn, False, False, 0)
 
     def _on_queue_toggle(self, widget, enabled):
+        Panel._queue_enabled = enabled
         if enabled:
             self.enable_btn.get_style_context().add_class("jog-distance-active")
             self.disable_btn.get_style_context().remove_class("jog-distance-active")
